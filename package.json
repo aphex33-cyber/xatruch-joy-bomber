@@ -1,0 +1,19 @@
+{
+  "name": "joy-bomber-retro",
+  "version": "1.0.0",
+  "description": "Juego retro arcade de lanzar ayuda y alegría desde un avión",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "game",
+    "arcade",
+    "retro",
+    "pixel-art",
+    "canvas",
+    "web-audio"
+  ],
+  "author": "",
+  "license": "MIT"
+}

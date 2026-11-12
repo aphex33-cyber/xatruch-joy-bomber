@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Joy Bomber Express - Retro 16-Bit</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div class="game-container">
+    <!-- Header -->
+    <header class="game-header">
+      <div class="brand-badge">
+        <span>✈️</span>
+        <span>JOY BOMBER EXPRESS</span>
+      </div>
+      <div class="header-actions">
+        <button id="btnMute" class="btn-pill">🔊 Audio: ON</button>
+      </div>
+    </header>
+
+    <!-- Canvas Principal del Juego -->
+    <canvas id="gameCanvas" width="960" height="520"></canvas>
+
+    <!-- Barra de Controles Táctiles para Móviles / Auxiliares -->
+    <div class="touch-controls">
+      <div class="carousel-buttons">
+        <button id="btnPrev" class="ctrl-btn">◀ [Q] Anterior</button>
+        <button id="btnNext" class="ctrl-btn">[E] Siguiente ▶</button>
+      </div>
+      <button id="btnDrop" class="ctrl-btn ctrl-btn-primary">🚀 SOLTAR [ESPACIO]</button>
+    </div>
+  </div>
+
+  <!-- Panel de Reglas & Controles -->
+  <div class="instructions-panel">
+    <div class="instruction-col">
+      <h4>🕹️ Controles</h4>
+      <ul>
+        <li><span class="kbd">ESPACIO</span> o clic: Iniciar / Soltar objeto</li>
+        <li><span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> <span class="kbd">4</span>: Selección directa de carga</li>
+        <li><span class="kbd">Q</span> / <span class="kbd">E</span>: Girar carrusel</li>
+        <li><span class="kbd">A</span> / <span class="kbd">D</span>: Regular velocidad del avión</li>
+      </ul>
+    </div>
+    <div class="instruction-col">
+      <h4>🎯 Compatibilidad</h4>
+      <ul>
+        <li>🏜️ <strong>Desierto</strong> ➔ 💧 Agua o 🥖 Comida</li>
+        <li>🏙️ <strong>Barrio Rico</strong> ➔ 📖 Biblia / Sabiduría</li>
+        <li>🏘️ <strong>Favela</strong> ➔ 🎁 Juguetes o 🥖 Comida</li>
+        <li>🔥 <strong>Incendio</strong> ➔ 💧 Bomba de Agua</li>
+      </ul>
+    </div>
+    <div class="instruction-col">
+      <h4>💖 Misión de Alegría</h4>
+      <p>Calcula la inercia parabólica del avión al soltar la carga. Mantén el <strong>Joy-O-Meter</strong> elevado y encadena aciertos para multiplicar combos (2x, 3x, 4x).</p>
+    </div>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

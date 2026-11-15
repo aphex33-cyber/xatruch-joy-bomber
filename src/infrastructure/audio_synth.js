@@ -43,7 +43,7 @@ export class RetroAudioSynth {
     osc.frequency.setValueAtTime(650, now);
     osc.frequency.exponentialRampToValueAtTime(180, now + 0.35);
 
-    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.setValueAtTime(0.18, now);
     gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
 
     osc.connect(gain);
@@ -61,7 +61,7 @@ export class RetroAudioSynth {
     this.ensureContext();
     if (!this.ctx) return;
 
-    const baseFreq = 440 * (1 + (combo - 1) * 0.1);
+    const baseFreq = 440 * (1 + Math.min(combo - 1, 6) * 0.1);
     const notes = [baseFreq, baseFreq * 1.25, baseFreq * 1.5, baseFreq * 2];
     const now = this.ctx.currentTime;
 
@@ -70,16 +70,45 @@ export class RetroAudioSynth {
       const gain = this.ctx.createGain();
 
       osc.type = 'square';
-      osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+      osc.frequency.setValueAtTime(freq, now + idx * 0.055);
 
-      gain.gain.setValueAtTime(0.12, now + idx * 0.06);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.15);
+      gain.gain.setValueAtTime(0.11, now + idx * 0.055);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.055 + 0.14);
 
       osc.connect(gain);
       gain.connect(this.ctx.destination);
 
-      osc.start(now + idx * 0.06);
-      osc.stop(now + idx * 0.06 + 0.16);
+      osc.start(now + idx * 0.055);
+      osc.stop(now + idx * 0.055 + 0.15);
+    });
+  }
+
+  /**
+   * Campana arcade de encaje PERFECTO
+   */
+  playPerfectSnap() {
+    if (this.muted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    const notes = [784, 987.77, 1174.66, 1567.98]; // G5, B5, D6, G6
+    const now = this.ctx.currentTime;
+
+    notes.forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.045);
+
+      gain.gain.setValueAtTime(0.22, now + idx * 0.045);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.045 + 0.25);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now + idx * 0.045);
+      osc.stop(now + idx * 0.045 + 0.26);
     });
   }
 
@@ -98,16 +127,16 @@ export class RetroAudioSynth {
     const now = this.ctx.currentTime;
 
     osc.frequency.setValueAtTime(160, now);
-    osc.frequency.linearRampToValueAtTime(90, now + 0.3);
+    osc.frequency.linearRampToValueAtTime(90, now + 0.28);
 
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
 
     osc.connect(gain);
     gain.connect(this.ctx.destination);
 
     osc.start(now);
-    osc.stop(now + 0.3);
+    osc.stop(now + 0.28);
   }
 
   /**
@@ -127,7 +156,7 @@ export class RetroAudioSynth {
     osc.frequency.setValueAtTime(800, now);
     osc.frequency.exponentialRampToValueAtTime(1200, now + 0.05);
 
-    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.setValueAtTime(0.14, now);
     gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
 
     osc.connect(gain);

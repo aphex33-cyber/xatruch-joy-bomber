@@ -21,7 +21,7 @@ export class BallisticsEngine {
     proj.y += proj.vy * dt;
 
     // Rotación estética en vuelo
-    proj.rotation += (proj.vx * 0.05 + 1.2) * dt;
+    proj.rotation += (proj.vx * 0.03 + 0.8) * dt;
 
     return proj;
   }
@@ -44,5 +44,37 @@ export class BallisticsEngine {
       active: true,
       timeInAir: 0
     };
+  }
+
+  /**
+   * Simula la trayectoria en pasos discretos para predecir dónde caerá el objeto
+   */
+  predictTrajectory(itemConfig, startX, startY, planeVx, groundY, steps = 40) {
+    const sim = {
+      x: startX,
+      y: startY + 12,
+      vx: planeVx * 0.95,
+      vy: 60,
+      drag: itemConfig ? itemConfig.drag : 0.985,
+      mass: itemConfig ? itemConfig.mass : 1.0
+    };
+
+    const points = [];
+    const dt = 0.035;
+
+    for (let i = 0; i < steps; i++) {
+      sim.vx *= Math.pow(sim.drag, dt * 60);
+      sim.vy += this.gravity * sim.mass * dt;
+      sim.x += sim.vx * dt;
+      sim.y += sim.vy * dt;
+
+      if (sim.y >= groundY) {
+        points.push({ x: sim.x, y: groundY });
+        return { landingX: sim.x, points };
+      }
+      points.push({ x: sim.x, y: sim.y });
+    }
+
+    return { landingX: sim.x, points };
   }
 }

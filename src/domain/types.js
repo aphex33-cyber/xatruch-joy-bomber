@@ -1,13 +1,23 @@
 /**
- * DOMINIO: Definiciones de objetos, biomas y reglas de compatibilidad
+ * DOMINIO: Definiciones de objetos, biomas, modos de juego y reglas de compatibilidad
  * Lógica pura sin dependencias de UI o librerías externas.
  */
+
+export const GAME_MODES = {
+  CITY: 'CITY',
+  GEOMETRY: 'GEOMETRY'
+};
 
 export const ITEM_TYPES = {
   WATER: 'WATER',
   FOOD: 'FOOD',
   BIBLE: 'BIBLE',
   TOY: 'TOY',
+  // Piezas geométricas para el Nivel de Precisión
+  TRIANGLE: 'TRIANGLE',
+  SQUARE: 'SQUARE',
+  CIRCLE: 'CIRCLE',
+  STAR: 'STAR'
 };
 
 export const ITEMS_CATALOG = {
@@ -18,7 +28,7 @@ export const ITEMS_CATALOG = {
     icon: '💧',
     color: '#38bdf8',
     splashColor: '#0284c7',
-    mass: 1.2,
+    mass: 1.15,
     drag: 0.99,
     description: 'Vital para sedientos y apagar fuegos'
   },
@@ -40,7 +50,7 @@ export const ITEMS_CATALOG = {
     icon: '📖',
     color: '#c084fc',
     splashColor: '#9333ea',
-    mass: 0.9,
+    mass: 0.95,
     drag: 0.98,
     description: 'Paz espiritual para corazones vacíos y magnates estresados'
   },
@@ -51,9 +61,58 @@ export const ITEMS_CATALOG = {
     icon: '🎁',
     color: '#f43f5e',
     splashColor: '#e11d48',
-    mass: 0.8,
-    drag: 0.97,
+    mass: 0.85,
+    drag: 0.975,
     description: 'Alegría pura, juguetes y fiesta para los niños'
+  },
+  // Catálogo Geométrico
+  [ITEM_TYPES.TRIANGLE]: {
+    id: ITEM_TYPES.TRIANGLE,
+    name: 'Prisma Triangular',
+    shortName: 'Triángulo',
+    icon: '🔺',
+    color: '#22d3ee',
+    splashColor: '#06b6d4',
+    mass: 1.05,
+    drag: 0.99,
+    shape: 'TRIANGLE',
+    description: 'Encaja en bases triangulares'
+  },
+  [ITEM_TYPES.SQUARE]: {
+    id: ITEM_TYPES.SQUARE,
+    name: 'Cubo Neón',
+    shortName: 'Cuadrado',
+    icon: '🟦',
+    color: '#a855f7',
+    splashColor: '#9333ea',
+    mass: 1.05,
+    drag: 0.99,
+    shape: 'SQUARE',
+    description: 'Encaja en bases cuadradas'
+  },
+  [ITEM_TYPES.CIRCLE]: {
+    id: ITEM_TYPES.CIRCLE,
+    name: 'Esfera Solar',
+    shortName: 'Círculo',
+    icon: '🟡',
+    color: '#facc15',
+    splashColor: '#eab308',
+    mass: 1.05,
+    drag: 0.99,
+    shape: 'CIRCLE',
+    description: 'Encaja en bases circulares'
+  },
+  [ITEM_TYPES.STAR]: {
+    id: ITEM_TYPES.STAR,
+    name: 'Estrella Estelar',
+    shortName: 'Estrella',
+    icon: '⭐',
+    color: '#f43f5e',
+    splashColor: '#e11d48',
+    mass: 1.05,
+    drag: 0.99,
+    shape: 'STAR',
+    description: 'Encaja en bases de estrella'
   }
 };
 
@@ -61,7 +120,8 @@ export const BIOME_TYPES = {
   DESERT: 'DESERT',
   RICH_DISTRICT: 'RICH_DISTRICT',
   FAVELA: 'FAVELA',
-  FIRE_EMERGENCY: 'FIRE_EMERGENCY'
+  FIRE_EMERGENCY: 'FIRE_EMERGENCY',
+  GEOMETRY_ZONE: 'GEOMETRY_ZONE'
 };
 
 export const BIOMES_CATALOG = {
@@ -70,11 +130,11 @@ export const BIOMES_CATALOG = {
     name: 'Desierto Sediento',
     groundColor: '#d97706',
     secondaryColor: '#f59e0b',
-    skyGradient: ['#fed7aa', '#fdba74'],
+    skyGradient: ['#fdba74', '#fed7aa'],
     accentEmoji: '🏜️',
     neededItems: [ITEM_TYPES.WATER, ITEM_TYPES.FOOD],
     happyMessage: '¡Agua bendita en el desierto! ¡La tierra florece!',
-    unhappyMessage: '¡Aquí nos morimos de sed y calor, necesitamos agua!',
+    unhappyMessage: '¡Aquí nos morimos de sed, necesitamos agua!',
     weightScore: 100
   },
   [BIOME_TYPES.RICH_DISTRICT]: {
@@ -82,11 +142,11 @@ export const BIOMES_CATALOG = {
     name: 'Distrito Financiero / Mansiones',
     groundColor: '#334155',
     secondaryColor: '#64748b',
-    skyGradient: ['#38bdf8', '#818cf8'],
+    skyGradient: ['#1e3a8a', '#38bdf8'],
     accentEmoji: '🏙️',
     neededItems: [ITEM_TYPES.BIBLE],
     happyMessage: '¡Un momento de paz espiritual! ¡Al fin hallé sentido!',
-    unhappyMessage: '¡Ya tengo dinero y autos, no me mojes el traje italiano!',
+    unhappyMessage: '¡Ya tengo dinero, no me mojes el traje italiano!',
     weightScore: 120
   },
   [BIOME_TYPES.FAVELA]: {
@@ -94,11 +154,11 @@ export const BIOMES_CATALOG = {
     name: 'Comunidad Popular',
     groundColor: '#78716c',
     secondaryColor: '#a8a29e',
-    skyGradient: ['#bae6fd', '#7dd3fc'],
+    skyGradient: ['#0284c7', '#bae6fd'],
     accentEmoji: '🏘️',
     neededItems: [ITEM_TYPES.FOOD, ITEM_TYPES.TOY, ITEM_TYPES.WATER],
     happyMessage: '¡Llegó la ayuda y la fiesta para todos!',
-    unhappyMessage: '¡Oigan, apunten mejor, casi nos cae en el techo!',
+    unhappyMessage: '¡Oigan, eso no es lo que pedimos!',
     weightScore: 90
   },
   [BIOME_TYPES.FIRE_EMERGENCY]: {
@@ -106,11 +166,23 @@ export const BIOMES_CATALOG = {
     name: '¡Incendio Activo!',
     groundColor: '#7f1d1d',
     secondaryColor: '#b91c1c',
-    skyGradient: ['#fca5a5', '#ef4444'],
+    skyGradient: ['#991b1b', '#fca5a5'],
     accentEmoji: '🔥',
     neededItems: [ITEM_TYPES.WATER],
     happyMessage: '¡Fuego sofocado! ¡Nos salvaron!',
     unhappyMessage: '¡Necesitamos AGUA, se nos quema todo!',
+    weightScore: 150
+  },
+  [BIOME_TYPES.GEOMETRY_ZONE]: {
+    id: BIOME_TYPES.GEOMETRY_ZONE,
+    name: 'Fábrica de Precisión',
+    groundColor: '#0f172a',
+    secondaryColor: '#38bdf8',
+    skyGradient: ['#090d16', '#1e1b4b'],
+    accentEmoji: '📐',
+    neededItems: [ITEM_TYPES.TRIANGLE, ITEM_TYPES.SQUARE, ITEM_TYPES.CIRCLE, ITEM_TYPES.STAR],
+    happyMessage: '¡Encaje perfecto!',
+    unhappyMessage: '¡Fallo de precisión!',
     weightScore: 150
   }
 };

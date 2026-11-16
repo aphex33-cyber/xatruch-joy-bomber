@@ -16,8 +16,8 @@ export class CanvasRenderer {
 
   resize() {
     const rect = this.canvas.parentElement.getBoundingClientRect();
-    this.canvas.width = Math.min(960, rect.width || 800);
-    this.canvas.height = Math.min(540, window.innerHeight * 0.72 || 480);
+    this.canvas.width = Math.min(960, Math.max(320, Math.floor(rect.width || 800)));
+    this.canvas.height = Math.max(420, Math.min(540, Math.floor(window.innerHeight * 0.68 || 480)));
     this.ctx.imageSmoothingEnabled = false;
   }
 
@@ -816,87 +816,102 @@ export class CanvasRenderer {
 
   renderHUD(ctx, gameState, currentBiome) {
     const w = this.canvas.width;
+    const isMobile = w < 620;
     const scorer = gameState.dropEngine.scorer;
     const levelCfg = gameState.getCurrentLevelConfig();
 
+    const hudHeight = isMobile ? 58 : 46;
     ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-    ctx.fillRect(0, 0, w, 46);
+    ctx.fillRect(0, 0, w, hudHeight);
 
     if (gameState.mode === GAME_MODES.HIGHWAY) {
       const hw = gameState.highwayEngine;
-      ctx.font = 'bold 13px "JetBrains Mono", monospace';
+      ctx.font = `bold ${isMobile ? 11 : 13}px "JetBrains Mono", monospace`;
       ctx.fillStyle = '#f43f5e';
       ctx.textAlign = 'left';
       const hearts = '❤️'.repeat(Math.max(0, hw.lives)) + '🖤'.repeat(Math.max(0, hw.maxLives - hw.lives));
-      ctx.fillText(`VIDAS: ${hearts}`, 16, 27);
-
-      ctx.font = 'bold 12px "JetBrains Mono", monospace';
-      ctx.fillStyle = '#38bdf8';
-      ctx.textAlign = 'center';
-      ctx.fillText('🏃 SALTO EN CARRETERA • [ESPACIO] SALTAR / DOBLE SALTO', w / 2, 18);
-
-      const spd = Math.round(gameState.plane.speed);
-      ctx.font = '10px "JetBrains Mono", monospace';
-      ctx.fillStyle = spd > 320 ? '#ef4444' : spd > 240 ? '#facc15' : '#94a3b8';
-      ctx.fillText(`VELOCIDAD: ${spd} KM/H  |  RÉCORD: ${Math.max(gameState.highScore, scorer.score)}`, w / 2, 35);
+      ctx.fillText(isMobile ? hearts : `VIDAS: ${hearts}`, 12, isMobile ? 20 : 27);
 
       ctx.textAlign = 'right';
       ctx.fillStyle = '#fbbf24';
-      ctx.font = 'bold 14px "JetBrains Mono", monospace';
-      ctx.fillText(`SCORE: ${scorer.score}`, w - 16, 22);
-      if (scorer.combo > 1) {
-        ctx.fillStyle = '#f43f5e';
-        ctx.font = 'bold 11px "JetBrains Mono", monospace';
-        ctx.fillText(`COMBO x${scorer.combo}! 🔥`, w - 16, 37);
-      }
+      ctx.font = `bold ${isMobile ? 12 : 14}px "JetBrains Mono", monospace`;
+      ctx.fillText(`SCORE: ${scorer.score}`, w - 12, 22);
+
+      const spd = Math.round(gameState.plane.speed);
+      ctx.textAlign = 'center';
+      ctx.font = `bold ${isMobile ? 10 : 12}px "JetBrains Mono", monospace`;
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText(
+        isMobile ? '🏃 SALTO EN CARRETERA' : '🏃 SALTO EN CARRETERA • [ESPACIO] SALTAR / DOBLE SALTO',
+        w / 2,
+        isMobile ? 38 : 18
+      );
+
+      ctx.font = '10px "JetBrains Mono", monospace';
+      ctx.fillStyle = spd > 320 ? '#ef4444' : spd > 240 ? '#facc15' : '#94a3b8';
+      ctx.fillText(
+        `VEL: ${spd} KM/H  |  RÉCORD: ${Math.max(gameState.highScore, scorer.score)}`,
+        w / 2,
+        isMobile ? 52 : 35
+      );
       return;
     }
 
     // JOY-O-METER (Izquierda)
-    ctx.font = 'bold 11px "JetBrains Mono", monospace';
+    ctx.font = `bold ${isMobile ? 10 : 11}px "JetBrains Mono", monospace`;
     ctx.fillStyle = '#f43f5e';
     ctx.textAlign = 'left';
-    ctx.fillText('💖 JOY-O-METER:', 16, 17);
+    ctx.fillText(isMobile ? '💖 JOY:' : '💖 JOY-O-METER:', 12, 16);
 
-    const barWidth = 128;
-    const barHeight = 11;
+    const barWidth = isMobile ? 86 : 128;
+    const barHeight = 10;
     ctx.fillStyle = '#334155';
-    ctx.fillRect(16, 24, barWidth, barHeight);
+    ctx.fillRect(12, 21, barWidth, barHeight);
 
     const joyPct = scorer.joy / 100;
     const joyColor = joyPct > 0.6 ? '#22c55e' : joyPct > 0.25 ? '#eab308' : '#ef4444';
     ctx.fillStyle = joyColor;
-    ctx.fillRect(16, 24, barWidth * joyPct, barHeight);
+    ctx.fillRect(12, 21, barWidth * joyPct, barHeight);
 
-    const minJoyX = 16 + barWidth * (levelCfg.minJoy / 100);
+    const minJoyX = 12 + barWidth * (levelCfg.minJoy / 100);
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(minJoyX - 1, 22, 2, 15);
+    ctx.fillRect(minJoyX - 1, 19, 2, 14);
 
     ctx.fillStyle = '#ffffff';
     ctx.font = '10px "JetBrains Mono", monospace';
-    ctx.fillText(`${Math.round(scorer.joy)}%`, 150, 33);
-
-    // NIVEL & ZONA ACTUAL (Centro)
-    ctx.font = 'bold 12px "JetBrains Mono", monospace';
-    ctx.fillStyle = '#38bdf8';
-    ctx.textAlign = 'center';
-    ctx.fillText(`${levelCfg.title.toUpperCase()} • ${currentBiome.accentEmoji} ${currentBiome.name.toUpperCase()}`, w / 2, 18);
-
-    const spd = Math.round(gameState.plane.speed);
-    ctx.font = '10px "JetBrains Mono", monospace';
-    ctx.fillStyle = spd > 280 ? '#ef4444' : spd > 195 ? '#facc15' : '#94a3b8';
-    ctx.fillText(`VELOCIDAD: ${spd} KT  |  META: ${scorer.score}/${levelCfg.targetScore} (JOY ≥ ${levelCfg.minJoy}%)`, w / 2, 35);
+    ctx.fillText(`${Math.round(scorer.joy)}%`, 12 + barWidth + 5, 30);
 
     // PUNTUACIÓN Y COMBO (Derecha)
     ctx.textAlign = 'right';
     ctx.fillStyle = '#fbbf24';
-    ctx.font = 'bold 13px "JetBrains Mono", monospace';
-    ctx.fillText(`SCORE: ${scorer.score}`, w - 16, 20);
+    ctx.font = `bold ${isMobile ? 11 : 13}px "JetBrains Mono", monospace`;
+    ctx.fillText(`SCORE: ${scorer.score}`, w - 12, 18);
 
     if (scorer.combo > 1) {
       ctx.fillStyle = '#f43f5e';
-      ctx.font = 'bold 11px "JetBrains Mono", monospace';
-      ctx.fillText(`COMBO x${scorer.combo}! 🔥`, w - 16, 35);
+      ctx.font = 'bold 10px "JetBrains Mono", monospace';
+      ctx.fillText(`COMBO x${scorer.combo}! 🔥`, w - 12, 32);
+    }
+
+    // NIVEL & ZONA ACTUAL
+    const spd = Math.round(gameState.plane.speed);
+    ctx.textAlign = 'center';
+    if (isMobile) {
+      ctx.font = 'bold 10px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText(
+        `${currentBiome.accentEmoji} ${currentBiome.name.toUpperCase()} • META: ${scorer.score}/${levelCfg.targetScore}`,
+        w / 2,
+        49
+      );
+    } else {
+      ctx.font = 'bold 12px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText(`${levelCfg.title.toUpperCase()} • ${currentBiome.accentEmoji} ${currentBiome.name.toUpperCase()}`, w / 2, 18);
+
+      ctx.font = '10px "JetBrains Mono", monospace';
+      ctx.fillStyle = spd > 280 ? '#ef4444' : spd > 195 ? '#facc15' : '#94a3b8';
+      ctx.fillText(`VELOCIDAD: ${spd} KT  |  META: ${scorer.score}/${levelCfg.targetScore} (JOY ≥ ${levelCfg.minJoy}%)`, w / 2, 35);
     }
 
     this.renderCarouselHUD(ctx, gameState, w);
@@ -948,18 +963,62 @@ export class CanvasRenderer {
     ctx.fillStyle = 'rgba(9, 13, 22, 0.92)';
     ctx.fillRect(0, 0, w, h);
 
+    const isMobile = w < 680;
+
     ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 26px "JetBrains Mono", monospace';
+    ctx.font = `bold ${isMobile ? 19 : 26}px "JetBrains Mono", monospace`;
     ctx.textAlign = 'center';
-    ctx.fillText('✈️ XATRUCH JOY BOMBER ARCADE', w / 2, h / 2 - 135);
+    ctx.fillText('✈️ XATRUCH JOY BOMBER', w / 2, isMobile ? 38 : h / 2 - 135);
 
     ctx.fillStyle = '#cbd5e1';
-    ctx.font = '13px "Inter", sans-serif';
-    ctx.fillText('Elige un modo de juego para comenzar:', w / 2, h / 2 - 102);
+    ctx.font = `${isMobile ? 12 : 13}px "Inter", sans-serif`;
+    ctx.fillText('Elige un modo de juego:', w / 2, isMobile ? 58 : h / 2 - 102);
 
-    const cardW = 240;
-    const cardH = 160;
+    if (isMobile) {
+      const cardW = Math.min(340, w - 28);
+      const topY = 74;
+      const bottomPad = 28;
+      const gap = 10;
+      const availH = Math.max(240, h - topY - bottomPad);
+      const cardH = Math.min(108, Math.floor((availH - gap * 2) / 3));
+      const startX = (w - cardW) / 2;
+
+      this.startModeButtons = [
+        { mode: GAME_MODES.CITY, x: startX, y: topY, w: cardW, h: cardH },
+        { mode: GAME_MODES.GEOMETRY, x: startX, y: topY + cardH + gap, w: cardW, h: cardH },
+        { mode: GAME_MODES.HIGHWAY, x: startX, y: topY + (cardH + gap) * 2, w: cardW, h: cardH }
+      ];
+
+      this.drawModeCardCompact(
+        ctx,
+        this.startModeButtons[0],
+        '🏙️ MODO CIUDAD',
+        'Tegucigalpa & SPS • Meta: 8,500 pts',
+        'TOCA PARA VOLAR',
+        '#38bdf8'
+      );
+      this.drawModeCardCompact(
+        ctx,
+        this.startModeButtons[1],
+        '📐 MODO GEOMETRÍA',
+        'Figuras de precisión • Meta: 5,500 pts',
+        'TOCA PARA JUGAR',
+        '#a855f7'
+      );
+      this.drawModeCardCompact(
+        ctx,
+        this.startModeButtons[2],
+        '🏃 SALTO EN CARRETERA',
+        'Salta obstáculos con doble salto',
+        'TOCA PARA CORRER',
+        '#f97316'
+      );
+      return;
+    }
+
     const gap = 18;
+    const cardW = Math.min(240, Math.floor((w - 60 - gap * 2) / 3));
+    const cardH = 160;
     const startX = (w - (cardW * 3 + gap * 2)) / 2;
     const cardY = h / 2 - 72;
 
@@ -1005,6 +1064,32 @@ export class CanvasRenderer {
     ctx.fillStyle = '#94a3b8';
     ctx.font = '11px "JetBrains Mono", monospace';
     ctx.fillText('Presiona [1], [2], [3] o haz clic en una tarjeta para iniciar', w / 2, cardY + cardH + 40);
+  }
+
+  drawModeCardCompact(ctx, box, title, subtitle, cta, accent) {
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.roundRect(box.x, box.y, box.w, box.h, 10);
+    ctx.fill();
+
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    const cx = box.x + box.w / 2;
+    ctx.textAlign = 'center';
+
+    ctx.fillStyle = accent;
+    ctx.font = 'bold 14px "JetBrains Mono", monospace';
+    ctx.fillText(title, cx, box.y + box.h * 0.34);
+
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '11px "Inter", sans-serif';
+    ctx.fillText(subtitle, cx, box.y + box.h * 0.6);
+
+    ctx.fillStyle = '#22c55e';
+    ctx.font = 'bold 11px "JetBrains Mono", monospace';
+    ctx.fillText(cta, cx, box.y + box.h * 0.84);
   }
 
   drawModeCard(ctx, box, title, subtitle, desc1, desc2, cta, accent) {

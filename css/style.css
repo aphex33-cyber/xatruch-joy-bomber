@@ -184,3 +184,47 @@ canvas#gameCanvas {
   font-size: 11px;
   color: #e2e8f0;
 }
+
+@media (max-width: 600px) {
+  body {
+    padding: 6px;
+  }
+
+  .game-header {
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .brand-badge {
+    font-size: 12px;
+  }
+
+  .btn-pill {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+
+  .touch-controls {
+    padding: 10px 12px;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .carousel-buttons {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .ctrl-btn {
+    flex: 1;
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+
+  .ctrl-btn-primary {
+    width: 100%;
+    padding: 12px;
+    font-size: 14px;
+  }
+}

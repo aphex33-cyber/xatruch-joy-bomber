@@ -23,32 +23,49 @@ export class JoyScorer {
     this.perfectDrops = 0;
   }
 
-  evaluateImpact(item, biome) {
+  evaluateImpact(item, biome, hitTarget = true) {
     this.totalDrops++;
     const isMatched = biome.neededItems.includes(item.id);
 
     if (isMatched) {
-      this.combo++;
-      if (this.combo > this.maxCombo) {
-        this.maxCombo = this.combo;
+      if (hitTarget) {
+        this.combo++;
+        if (this.combo > this.maxCombo) {
+          this.maxCombo = this.combo;
+        }
+        this.successfulDrops++;
+
+        const comboMultiplier = Math.min(1 + (this.combo - 1) * 0.25, 4.0);
+        const points = Math.round(biome.weightScore * comboMultiplier);
+        this.score += points;
+
+        const joyGain = Math.min(14 + this.combo * 2, 26);
+        this.joy = Math.min(100, this.joy + joyGain);
+
+        return {
+          matched: true,
+          tier: 'DIRECT',
+          points,
+          combo: this.combo,
+          joyDelta: joyGain,
+          message: biome.happyMessage
+        };
+      } else {
+        // Cayó en la zona correcta pero lejos de un ciudadano o edificio objetivo
+        const points = Math.round(biome.weightScore * 0.4);
+        this.score += points;
+        const joyGain = 4;
+        this.joy = Math.min(100, this.joy + joyGain);
+
+        return {
+          matched: true,
+          tier: 'INDIRECT',
+          points,
+          combo: this.combo,
+          joyDelta: joyGain,
+          message: '¡Cerca! Apunta directo a la gente'
+        };
       }
-      this.successfulDrops++;
-
-      const comboMultiplier = Math.min(1 + (this.combo - 1) * 0.25, 4.0);
-      const points = Math.round(biome.weightScore * comboMultiplier);
-      this.score += points;
-
-      const joyGain = Math.min(15 + this.combo * 2, 30);
-      this.joy = Math.min(100, this.joy + joyGain);
-
-      return {
-        matched: true,
-        tier: 'GOOD',
-        points,
-        combo: this.combo,
-        joyDelta: joyGain,
-        message: biome.happyMessage
-      };
     } else {
       const oldCombo = this.combo;
       this.combo = 0;
@@ -68,20 +85,18 @@ export class JoyScorer {
 
   /**
    * Evaluación de Precisión Geométrica (Nivel 2)
-   * @param {Object} item - Ítem geométrico soltado
-   * @param {Object|null} slot - Base objetivo más cercana
-   * @param {number} distance - Distancia horizontal en px al centro de la base
+   * Tolerancia balanceada para jugabilidad justa y divertida
    */
   evaluateGeometryImpact(item, slot, distance) {
     this.totalDrops++;
 
-    if (!slot || slot.filled || slot.shapeType !== item.id || distance > 34) {
+    if (!slot || slot.filled || slot.shapeType !== item.id || distance > 46) {
       const oldCombo = this.combo;
       this.combo = 0;
-      const joyLoss = 12;
+      const joyLoss = 8;
       this.joy = Math.max(0, this.joy - joyLoss);
 
-      const reason = !slot || distance > 34
+      const reason = !slot || distance > 46
         ? '¡FALLASTE LA BASE!'
         : slot.filled
           ? '¡ESA BASE YA ESTÁ LLENA!'
@@ -97,24 +112,23 @@ export class JoyScorer {
       };
     }
 
-    // Coincide forma y está dentro de rango
     this.combo++;
     if (this.combo > this.maxCombo) {
       this.maxCombo = this.combo;
     }
     this.successfulDrops++;
 
-    const isPerfect = distance <= 13;
+    const isPerfect = distance <= 18;
     if (isPerfect) {
       this.perfectDrops++;
     }
 
-    const basePoints = isPerfect ? 300 : 120;
+    const basePoints = isPerfect ? 300 : 140;
     const comboMultiplier = Math.min(1 + (this.combo - 1) * 0.25, 4.0);
     const points = Math.round(basePoints * comboMultiplier);
     this.score += points;
 
-    const joyGain = isPerfect ? 22 : 12;
+    const joyGain = isPerfect ? 24 : 15;
     this.joy = Math.min(100, this.joy + joyGain);
 
     return {
@@ -127,8 +141,7 @@ export class JoyScorer {
     };
   }
 
-  decayJoy(dt) {
-    const decayRate = 1.0; // % por segundo
+  decayJoy(dt, decayRate = 1.0) {
     this.joy = Math.max(0, this.joy - decayRate * dt);
     return this.joy;
   }

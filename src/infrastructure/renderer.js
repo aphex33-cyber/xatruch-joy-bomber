@@ -429,17 +429,60 @@ export class CanvasRenderer {
       groundY
     );
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.32)';
+    let isTargetLocked = false;
+    let isPerfectLock = false;
+
+    if (gameState.mode === GAME_MODES.GEOMETRY) {
+      for (const slot of gameState.geometrySlots) {
+        if (!slot.filled && slot.shapeType === itemId) {
+          const dist = Math.abs(slot.x - landingX);
+          if (dist <= 18) {
+            isTargetLocked = true;
+            isPerfectLock = true;
+            break;
+          } else if (dist <= 46) {
+            isTargetLocked = true;
+            break;
+          }
+        }
+      }
+    } else {
+      for (const c of gameState.citizens) {
+        if (Math.abs(c.x - landingX) < 75) {
+          isTargetLocked = true;
+          break;
+        }
+      }
+    }
+
+    ctx.fillStyle = isPerfectLock
+      ? 'rgba(250, 204, 21, 0.55)'
+      : isTargetLocked
+        ? 'rgba(74, 222, 128, 0.45)'
+        : 'rgba(255, 255, 255, 0.3)';
     for (let i = 0; i < points.length; i += 2) {
       ctx.fillRect(points[i].x - 1.5, points[i].y - 1.5, 3, 3);
     }
 
     const pulse = 1 + Math.sin(this.elapsedTime * 10) * 0.15;
-    ctx.strokeStyle = itemConfig ? itemConfig.color : '#38bdf8';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = isPerfectLock
+      ? '#facc15'
+      : isTargetLocked
+        ? '#4ade80'
+        : itemConfig
+          ? itemConfig.color
+          : '#38bdf8';
+    ctx.lineWidth = isTargetLocked ? 3 : 2;
     ctx.beginPath();
     ctx.ellipse(landingX, groundY + 2, 16 * pulse, 5 * pulse, 0, 0, Math.PI * 2);
     ctx.stroke();
+
+    if (isPerfectLock) {
+      ctx.font = 'bold 10px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#facc15';
+      ctx.textAlign = 'center';
+      ctx.fillText('🎯 LISTO!', landingX, groundY - 46);
+    }
   }
 
   renderCitizens(ctx, gameState) {
@@ -748,8 +791,8 @@ export class CanvasRenderer {
       this.startModeButtons[0],
       '🏙️ MODO CIUDAD',
       'Tegucigalpa & San Pedro Sula',
-      'Lanza agua, comida, biblias y regalos.',
-      'Meta: 1,200 pts + Joy ≥ 60%',
+      'Apunta a la gente: agua, comida, biblias.',
+      'Meta: 2,200 pts + Joy ≥ 65%',
       '[1] CLIC PARA VOLAR',
       '#38bdf8'
     );
@@ -761,7 +804,7 @@ export class CanvasRenderer {
       '📐 MODO GEOMETRÍA',
       'Nivel 1 (Básicas) & Nivel 2 (Complejas)',
       'Encaja figuras en sus bases de precisión.',
-      'Meta: 1,400 pts + Joy ≥ 60%',
+      'Meta: 1,000 pts + Joy ≥ 55%',
       '[2] CLIC PARA VOLAR',
       '#a855f7'
     );

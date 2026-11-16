@@ -89,13 +89,39 @@ export class DropEngine {
       }
     }
 
-    // 5. Decaimiento leve de alegría
-    this.scorer.decayJoy(dt);
+    // 5. Decaimiento leve de alegría (más suave en modo Geometría)
+    const decayRate = gameState.mode === GAME_MODES.GEOMETRY ? 0.55 : 1.1;
+    this.scorer.decayJoy(dt, decayRate);
   }
 
   handleCityImpact(p, groundY, gameState) {
     const biome = gameState.getBiomeAtX(p.x);
-    const result = this.scorer.evaluateImpact(p.item, biome);
+
+    // Verificar si acertó cerca de un ciudadano o edificio en llamas
+    let hitCitizen = false;
+    for (const c of gameState.citizens) {
+      if (Math.abs(c.x - p.x) < 75) {
+        hitCitizen = true;
+        break;
+      }
+    }
+
+    let hitFireBuilding = false;
+    if (p.item.id === ITEM_TYPES.WATER && biome.id === BIOME_TYPES.FIRE_EMERGENCY) {
+      for (const chunk of gameState.biomeChunks) {
+        for (const b of chunk.buildings) {
+          if (b.type === BIOME_TYPES.FIRE_EMERGENCY && !b.extinguished) {
+            if (p.x >= b.x - 25 && p.x <= b.x + b.width + 25) {
+              hitFireBuilding = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    const hitTarget = hitCitizen || hitFireBuilding;
+    const result = this.scorer.evaluateImpact(p.item, biome, hitTarget);
 
     // Hacer que el paquete ruede un poco al caer (excepto agua que salpica)
     if (p.item.id !== ITEM_TYPES.WATER) {
@@ -106,13 +132,13 @@ export class DropEngine {
 
     if (result.matched) {
       for (const c of gameState.citizens) {
-        if (Math.abs(c.x - p.x) < 95) {
+        if (Math.abs(c.x - p.x) < 85) {
           c.isHappy = true;
           c.happyTimer = 3.5;
         }
       }
 
-      if (p.item.id === ITEM_TYPES.WATER && biome.id === BIOME_TYPES.FIRE_EMERGENCY) {
+      if (hitFireBuilding) {
         for (const chunk of gameState.biomeChunks) {
           for (const b of chunk.buildings) {
             if (b.type === BIOME_TYPES.FIRE_EMERGENCY && !b.extinguished) {
@@ -137,7 +163,7 @@ export class DropEngine {
       y: groundY - 20,
       text: result.matched ? `+${result.points} JOY!` : '¡ERROR! -JOY',
       subtext: result.message,
-      color: result.matched ? '#4ade80' : '#f87171',
+      color: result.tier === 'DIRECT' ? '#4ade80' : result.tier === 'INDIRECT' ? '#fde047' : '#f87171',
       life: 2.0,
       maxLife: 2.0,
       vy: -35

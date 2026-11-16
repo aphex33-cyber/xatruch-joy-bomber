@@ -259,11 +259,11 @@ export class GameState {
 
   generateGeometrySlotsForChunk(chunk) {
     const shapes = this.carouselItems;
-    const count = 3;
-    const spacing = (chunk.endX - chunk.startX - 160) / count;
+    const count = 4;
+    const spacing = (chunk.endX - chunk.startX - 120) / count;
 
     for (let i = 0; i < count; i++) {
-      const x = chunk.startX + 120 + i * spacing + (Math.random() - 0.5) * 35;
+      const x = chunk.startX + 95 + i * spacing + (Math.random() - 0.5) * 20;
       const shapeType = shapes[Math.floor(Math.random() * shapes.length)];
 
       this.geometrySlots.push({

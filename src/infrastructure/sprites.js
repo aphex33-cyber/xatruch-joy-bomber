@@ -50,6 +50,36 @@ const PLANE_PALETTE = {
   B: '#334155'  // Tren de aterrizaje / llantas
 };
 
+// Matriz 12x14 para el rostro y busto detallado del General Florencio Xatruch
+const XATRUCH_MATRIX = [
+  '....KKKK....',
+  '...KKKKKK...',
+  '..KKKGGKKK..',
+  '.KKKKKKKKKK.',
+  '..SSSSSSSS..',
+  '..SBSSSSBS..',
+  '..SWESSSWE..',
+  '..SSSSNSSS..',
+  '..SMMMMMMS..',
+  '...MMMMMM...',
+  '...SSMMSS...',
+  '.GGUUUUUUGG.',
+  '.UUUUUGUUUU.',
+  '.UUUUUUUUUU.'
+];
+
+const XATRUCH_PALETTE = {
+  K: '#0f172a', // Kepi / bicornio militar oscuro
+  G: '#fbbf24', // Emblema y charreteras doradas
+  S: '#fed7aa', // Piel rostro
+  B: '#292524', // Cejas pobladas
+  W: '#ffffff', // Esclerótica del ojo
+  E: '#0f172a', // Pupila mirando al frente
+  N: '#f59e0b', // Sombra nariz
+  M: '#1c1917', // Bigote espeso y barba del General Xatruch
+  U: '#1e3a8a'  // Casaca militar azul marino
+};
+
 // Matrices 10x14 para ciudadanos (frame 1 esperando, frame 2 brazos arriba)
 const CITIZEN_WAIT_1 = [
   '...HHHH...',
@@ -115,6 +145,7 @@ function getCitizenPalette(biomeType) {
 export class SpriteLibrary {
   constructor() {
     this.planeSprite = compilePixelMatrix(PLANE_MATRIX, PLANE_PALETTE, 2.6);
+    this.xatruchSprite = compilePixelMatrix(XATRUCH_MATRIX, XATRUCH_PALETTE, 1.8);
     this.citizenSprites = {};
 
     const biomes = [
@@ -142,30 +173,12 @@ export class SpriteLibrary {
     // Banda / bufanda azul y blanca ondeando detrás del General Xatruch
     const scarfWave = Math.sin(time * 18) * 3;
     ctx.fillStyle = '#0284c7';
-    ctx.fillRect(28, -2 + scarfWave * 0.4, 10, 3);
+    ctx.fillRect(24, -1 + scarfWave * 0.4, 12, 3);
     ctx.fillStyle = '#f8fafc';
-    ctx.fillRect(20, -1 + scarfWave, 9, 3);
+    ctx.fillRect(15, 0 + scarfWave, 10, 3);
 
-    // Piloto: General Florencio Xatruch en cabina abierta superior
-    // Uniforme azul marino con charreteras doradas
-    ctx.fillStyle = '#1e3a8a';
-    ctx.fillRect(36, 4, 12, 8);
-    ctx.fillStyle = '#fbbf24'; // Charreteras doradas
-    ctx.fillRect(35, 4, 3, 3);
-    ctx.fillRect(46, 4, 3, 3);
-    // Rostro
-    ctx.fillStyle = '#fed7aa';
-    ctx.fillRect(38, -4, 8, 8);
-    // Bigote y barba distintiva del General Xatruch
-    ctx.fillStyle = '#292524';
-    ctx.fillRect(38, 1, 8, 3);
-    ctx.fillRect(40, 0, 6, 2);
-    // Bicornio / Kepi militar oscuro con borde dorado
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(36, -9, 12, 5);
-    ctx.fillRect(39, -12, 6, 3);
-    ctx.fillStyle = '#fbbf24';
-    ctx.fillRect(36, -5, 12, 1.5);
+    // Piloto: Rostro y busto detallado del General Florencio Xatruch
+    ctx.drawImage(this.xatruchSprite, 32, -16);
 
     // Sprite principal del avión
     ctx.drawImage(this.planeSprite, 0, 0);

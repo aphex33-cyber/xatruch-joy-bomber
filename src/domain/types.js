@@ -235,8 +235,8 @@ export const LEVELS_CONFIG = {
       id: 'TEGUCIGALPA',
       title: 'Nivel 1: Tegucigalpa',
       subtitle: 'El Picacho, Cerro Juana Laínez, Estadio Nacional y Centro Cívico',
-      targetScore: 1200,
-      minJoy: 60,
+      targetScore: 2200,
+      minJoy: 65,
       skyTint: null,
       landmarks: ['PICACHO', 'JUANA_LAINEZ', 'ESTADIO_TGU', 'CENTRO_CIVICO']
     },
@@ -245,8 +245,8 @@ export const LEVELS_CONFIG = {
       id: 'SPS',
       title: 'Nivel 2: San Pedro Sula',
       subtitle: 'Cordillera del Merendón, Estadio Olímpico y Los Bordos',
-      targetScore: 2800,
-      minJoy: 65,
+      targetScore: 4500,
+      minJoy: 70,
       skyTint: '#0284c7',
       landmarks: ['MERENDON', 'ESTADIO_OLIMPICO', 'BORDOS', 'FUENTE_LUMINOSA']
     }
@@ -257,8 +257,8 @@ export const LEVELS_CONFIG = {
       id: 'GEO_BASIC',
       title: 'Nivel 1: Figuras Básicas',
       subtitle: 'Triángulo, Cuadrado, Círculo y Estrella',
-      targetScore: 1400,
-      minJoy: 60,
+      targetScore: 1000,
+      minJoy: 55,
       items: [ITEM_TYPES.TRIANGLE, ITEM_TYPES.SQUARE, ITEM_TYPES.CIRCLE, ITEM_TYPES.STAR]
     },
     {
@@ -266,8 +266,8 @@ export const LEVELS_CONFIG = {
       id: 'GEO_COMPLEX',
       title: 'Nivel 2: Figuras Complejas',
       subtitle: 'Hexágono, Rombo, Cruz Táctica y Media Luna',
-      targetScore: 3200,
-      minJoy: 65,
+      targetScore: 2400,
+      minJoy: 60,
       items: [ITEM_TYPES.HEXAGON, ITEM_TYPES.DIAMOND, ITEM_TYPES.CROSS, ITEM_TYPES.CRESCENT]
     }
   ]

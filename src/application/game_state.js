@@ -6,7 +6,9 @@ import {
   ITEMS_CATALOG,
   LEVELS_CONFIG
 } from '../domain/types.js';
+import { HighScoreStore } from '../domain/score.js';
 import { DropEngine } from './drop_engine.js';
+import { HighwayEngine } from './highway_engine.js';
 
 export const GAME_STATUS = {
   START: 'START',
@@ -25,6 +27,10 @@ export class GameState {
     this.levelIndex = 0; // 0 = Nivel 1, 1 = Nivel 2
 
     this.dropEngine = new DropEngine();
+    this.highwayEngine = new HighwayEngine(canvasWidth, canvasHeight);
+
+    this.highScore = HighScoreStore.get(this.mode);
+    this.isNewRecord = false;
 
     this.carouselItems = this.getItemsForCurrentLevel();
     this.selectedItemIndex = 0;
@@ -78,6 +84,8 @@ export class GameState {
   setMode(newMode) {
     this.mode = newMode;
     this.levelIndex = 0;
+    this.highScore = HighScoreStore.get(this.mode);
+    this.isNewRecord = false;
     this.carouselItems = this.getItemsForCurrentLevel();
     this.selectedItemIndex = 0;
     this.dropEngine.scorer.reset();
@@ -89,11 +97,19 @@ export class GameState {
       this.mode = mode;
     }
     this.levelIndex = 0;
+    this.highScore = HighScoreStore.get(this.mode);
+    this.isNewRecord = false;
     this.carouselItems = this.getItemsForCurrentLevel();
     this.selectedItemIndex = 0;
     this.dropEngine.scorer.reset();
     this.initWorld();
     this.status = GAME_STATUS.PLAYING;
+  }
+
+  finalizeRunHighScore() {
+    const res = HighScoreStore.update(this.mode, this.dropEngine.scorer.score);
+    this.highScore = res.highScore;
+    this.isNewRecord = res.isNewRecord;
   }
 
   advanceToNextLevel() {
@@ -105,6 +121,7 @@ export class GameState {
       this.initWorld();
       this.status = GAME_STATUS.PLAYING;
     } else {
+      this.finalizeRunHighScore();
       this.status = GAME_STATUS.VICTORY;
     }
   }
@@ -123,8 +140,16 @@ export class GameState {
     this.landmarkCounter = 0;
     this.dropCooldown = 0;
 
+    if (this.mode === GAME_MODES.HIGHWAY) {
+      this.plane.baseSpeed = 195;
+      this.plane.speed = 195;
+      this.dropEngine.scorer.joy = 100;
+      this.highwayEngine.reset(this.canvasWidth, this.canvasHeight);
+      return;
+    }
+
     // Velocidad inicial en el setting más bajo
-    this.plane.baseSpeed = 115 + this.levelIndex * 25;
+    this.plane.baseSpeed = 105 + this.levelIndex * 25;
     this.plane.speed = this.plane.baseSpeed;
 
     if (this.mode === GAME_MODES.GEOMETRY) {
@@ -304,6 +329,9 @@ export class GameState {
 
   dropSelectedItem() {
     if (this.status !== GAME_STATUS.PLAYING) return null;
+    if (this.mode === GAME_MODES.HIGHWAY) {
+      return this.highwayEngine.jump();
+    }
     if (this.dropCooldown > 0) return null; // Bloqueo anti-spam
 
     this.dropCooldown = this.dropCooldownDuration;
@@ -317,6 +345,26 @@ export class GameState {
 
     this.levelTime += dt;
 
+    if (this.mode === GAME_MODES.HIGHWAY) {
+      // Velocidad progresiva en carretera (de 195 hasta 480)
+      this.plane.baseSpeed = Math.min(480, 195 + this.levelTime * 3.2);
+      const speedOffset = inputState.speedUp ? 55 : inputState.slowDown ? -45 : 0;
+      const targetSpeed = Math.max(140, this.plane.baseSpeed + speedOffset);
+      this.plane.speed += (targetSpeed - this.plane.speed) * Math.min(1, dt * 8);
+
+      const moveDist = this.plane.speed * dt;
+      this.worldDistance += moveDist;
+
+      this.dropEngine.update(dt, this, moveDist);
+      // Restaurar joy que decae en dropEngine, ya que en Highway depende de las vidas
+      const isDead = this.highwayEngine.update(dt, this.plane.speed, this.dropEngine.scorer, this.dropEngine);
+      if (isDead) {
+        this.finalizeRunHighScore();
+        this.status = GAME_STATUS.GAMEOVER;
+      }
+      return;
+    }
+
     if (this.dropCooldown > 0) {
       this.dropCooldown = Math.max(0, this.dropCooldown - dt);
     }
@@ -324,21 +372,21 @@ export class GameState {
       this.plane.hatchOpenTimer = Math.max(0, this.plane.hatchOpenTimer - dt);
     }
 
-    // Escalado continuo de velocidad: desde el mínimo (115) hasta superar con creces el boost inicial de D (220+)
-    this.plane.baseSpeed = Math.min(360, 115 + this.levelIndex * 25 + this.levelTime * 3.8);
+    // Escalado continuo de velocidad a lo largo de varios minutos (105 KT -> 430 KT)
+    this.plane.baseSpeed = Math.min(430, 105 + this.levelIndex * 25 + this.levelTime * 2.4);
 
     let speedOffset = 0;
     if (inputState.speedUp) {
-      speedOffset = 65; // Letra D acelera sobre la velocidad base actual
+      speedOffset = 65;
       this.plane.tilt = 0.06;
     } else if (inputState.slowDown) {
-      speedOffset = -45; // Letra A frena sobre la velocidad base actual
+      speedOffset = -45;
       this.plane.tilt = -0.06;
     } else {
       this.plane.tilt *= 0.9;
     }
 
-    const targetSpeed = Math.max(90, this.plane.baseSpeed + speedOffset);
+    const targetSpeed = Math.max(85, this.plane.baseSpeed + speedOffset);
     this.plane.speed += (targetSpeed - this.plane.speed) * Math.min(1, dt * 8);
 
     const moveDist = this.plane.speed * dt;
@@ -417,12 +465,14 @@ export class GameState {
       if (this.levelIndex + 1 < levels.length) {
         this.status = GAME_STATUS.LEVEL_COMPLETE;
       } else {
+        this.finalizeRunHighScore();
         this.status = GAME_STATUS.VICTORY;
       }
       return;
     }
 
     if (this.dropEngine.scorer.joy <= 0) {
+      this.finalizeRunHighScore();
       this.status = GAME_STATUS.GAMEOVER;
     }
   }

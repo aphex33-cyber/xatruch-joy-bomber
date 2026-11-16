@@ -1,6 +1,39 @@
 /**
- * DOMINIO: Sistema de Alegría (Joy-O-Meter), Combos y Puntuación
+ * DOMINIO: Sistema de Alegría (Joy-O-Meter), Combos, Puntuación y Récords
  */
+
+const HIGH_SCORE_STORAGE_KEY = 'joy_bomber_highscores_v1';
+
+export class HighScoreStore {
+  static loadAll() {
+    try {
+      const raw = window.localStorage.getItem(HIGH_SCORE_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  static get(mode) {
+    const all = this.loadAll();
+    return all[mode] || 0;
+  }
+
+  static update(mode, score) {
+    const all = this.loadAll();
+    const prev = all[mode] || 0;
+    if (score > prev) {
+      all[mode] = score;
+      try {
+        window.localStorage.setItem(HIGH_SCORE_STORAGE_KEY, JSON.stringify(all));
+      } catch {
+        // Ignorar si localStorage no está disponible
+      }
+      return { highScore: score, isNewRecord: true };
+    }
+    return { highScore: prev, isNewRecord: false };
+  }
+}
 
 export class JoyScorer {
   constructor() {

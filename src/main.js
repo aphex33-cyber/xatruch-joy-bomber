@@ -20,8 +20,15 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const syncModeButtonLabel = () => {
     if (btnMode) {
-      btnMode.textContent =
-        gameState.mode === GAME_MODES.CITY ? '🎮 Modo: Ciudad' : '📐 Modo: Geometría';
+      if (gameState.mode === GAME_MODES.CITY) btnMode.textContent = '🎮 Modo: Ciudad';
+      else if (gameState.mode === GAME_MODES.GEOMETRY) btnMode.textContent = '📐 Modo: Geometría';
+      else btnMode.textContent = '🏃 Modo: Carretera';
+    }
+    if (btnDrop) {
+      btnDrop.textContent =
+        gameState.mode === GAME_MODES.HIGHWAY
+          ? '⬆️ SALTAR [ESPACIO]'
+          : '🚀 SOLTAR [ESPACIO]';
     }
   };
 
@@ -39,8 +46,8 @@ window.addEventListener('DOMContentLoaded', () => {
     } else if (gameState.status === GAME_STATUS.GAMEOVER) {
       gameState.restart();
     } else if (gameState.status === GAME_STATUS.PLAYING) {
-      const dropped = gameState.dropSelectedItem();
-      if (dropped) {
+      const actionDone = gameState.dropSelectedItem();
+      if (actionDone && gameState.mode !== GAME_MODES.HIGHWAY) {
         audio.playDrop();
       }
     }
@@ -75,6 +82,10 @@ window.addEventListener('DOMContentLoaded', () => {
         audio.playCarouselClick();
       } else if (idx === 1) {
         gameState.startGame(GAME_MODES.GEOMETRY);
+        syncModeButtonLabel();
+        audio.playCarouselClick();
+      } else if (idx === 2) {
+        gameState.startGame(GAME_MODES.HIGHWAY);
         syncModeButtonLabel();
         audio.playCarouselClick();
       }
@@ -127,6 +138,11 @@ window.addEventListener('DOMContentLoaded', () => {
     return result;
   };
 
+  // Audio del Modo Salto en Carretera
+  gameState.highwayEngine.onJump = (isDouble) => audio.playJump(isDouble);
+  gameState.highwayEngine.onStarCollected = () => audio.playStar();
+  gameState.highwayEngine.onObstacleHit = () => audio.playFail();
+
   if (btnPrev) {
     btnPrev.addEventListener('click', () => {
       gameState.selectPrevItem();
@@ -152,8 +168,8 @@ window.addEventListener('DOMContentLoaded', () => {
     btnMode.addEventListener('click', () => {
       audio.ensureContext();
       audio.playCarouselClick();
-      const nextMode =
-        gameState.mode === GAME_MODES.CITY ? GAME_MODES.GEOMETRY : GAME_MODES.CITY;
+      const order = [GAME_MODES.CITY, GAME_MODES.GEOMETRY, GAME_MODES.HIGHWAY];
+      const nextMode = order[(order.indexOf(gameState.mode) + 1) % order.length];
       gameState.setMode(nextMode);
       gameState.status = GAME_STATUS.START;
       syncModeButtonLabel();

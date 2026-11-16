@@ -40,45 +40,55 @@ export class CanvasRenderer {
 
     ctx.clearRect(0, 0, w, h);
 
-    const currentBiome = gameState.getBiomeAtX(gameState.plane.x);
-    this.renderSky(ctx, w, h, currentBiome, gameState.mode);
-    this.renderFarMountains(ctx, w, h, gameState.mode);
-    this.renderClouds(ctx, w, h, gameState.mode);
-
-    // Suelo, Landmarks de Honduras y Edificios
-    this.renderWorldChunks(ctx, gameState);
-
-    if (gameState.status === GAME_STATUS.PLAYING) {
-      this.renderPredictiveReticle(ctx, gameState);
-    }
-
-    if (gameState.mode === GAME_MODES.GEOMETRY) {
-      this.renderGeometrySlots(ctx, gameState);
+    if (gameState.mode === GAME_MODES.HIGHWAY) {
+      this.renderHighwayWorld(ctx, w, h, gameState);
+      this.renderSpeedLines(ctx, w, h, gameState.plane.speed);
+      this.renderParticles(ctx, gameState.dropEngine.particles);
+      this.renderFloatingTexts(ctx, gameState.dropEngine.floatingTexts);
     } else {
-      this.renderCitizens(ctx, gameState);
+      const currentBiome = gameState.getBiomeAtX(gameState.plane.x);
+      this.renderSky(ctx, w, h, currentBiome, gameState.mode);
+      this.renderFarMountains(ctx, w, h, gameState.mode);
+      this.renderClouds(ctx, w, h, gameState.mode);
+
+      // Suelo, Landmarks de Honduras y Edificios
+      this.renderWorldChunks(ctx, gameState);
+
+      this.renderSpeedLines(ctx, w, h, gameState.plane.speed);
+
+      if (gameState.status === GAME_STATUS.PLAYING) {
+        this.renderPredictiveReticle(ctx, gameState);
+      }
+
+      if (gameState.mode === GAME_MODES.GEOMETRY) {
+        this.renderGeometrySlots(ctx, gameState);
+      } else {
+        this.renderCitizens(ctx, gameState);
+      }
+
+      // Objetos rodando en el suelo
+      this.renderRollingItems(ctx, gameState.dropEngine.rollingItems, gameState.mode);
+
+      // Partículas de impacto
+      this.renderParticles(ctx, gameState.dropEngine.particles);
+
+      // Objetos cayendo
+      this.renderActiveDrops(ctx, gameState.dropEngine.activeDrops, gameState.mode);
+
+      // Humo del avión
+      this.renderSmoke(ctx, gameState.smokeTrail);
+
+      // El Avión con General Xatruch
+      this.sprites.drawPlane(ctx, gameState.plane, this.propellerAngle, this.elapsedTime);
+
+      // Textos flotantes
+      this.renderFloatingTexts(ctx, gameState.dropEngine.floatingTexts);
     }
-
-    // Objetos rodando en el suelo
-    this.renderRollingItems(ctx, gameState.dropEngine.rollingItems, gameState.mode);
-
-    // Partículas de impacto
-    this.renderParticles(ctx, gameState.dropEngine.particles);
-
-    // Objetos cayendo
-    this.renderActiveDrops(ctx, gameState.dropEngine.activeDrops, gameState.mode);
-
-    // Humo del avión
-    this.renderSmoke(ctx, gameState.smokeTrail);
-
-    // El Avión con General Xatruch
-    this.sprites.drawPlane(ctx, gameState.plane, this.propellerAngle, this.elapsedTime);
-
-    // Textos flotantes
-    this.renderFloatingTexts(ctx, gameState.dropEngine.floatingTexts);
 
     ctx.restore();
 
     // HUD
+    const currentBiome = gameState.getBiomeAtX(gameState.plane.x);
     this.renderHUD(ctx, gameState, currentBiome);
 
     // Pantallas de Estado
@@ -90,6 +100,161 @@ export class CanvasRenderer {
       this.renderVictoryScreen(ctx, w, h, gameState);
     } else if (gameState.status === GAME_STATUS.GAMEOVER) {
       this.renderGameOverScreen(ctx, w, h, gameState);
+    }
+  }
+
+  renderSpeedLines(ctx, w, h, speed) {
+    if (speed < 190) return;
+    const intensity = Math.min(1, (speed - 190) / 220);
+    const count = Math.floor(4 + intensity * 12);
+    ctx.strokeStyle = `rgba(255, 255, 255, ${0.12 + intensity * 0.22})`;
+    ctx.lineWidth = 1.5;
+
+    for (let i = 0; i < count; i++) {
+      const y = ((i * 73 + 55) % (h - 120)) + 50;
+      const len = 35 + intensity * 85;
+      const x = w - (((this.elapsedTime * speed * 1.9 + i * 190) % (w + len)) - len);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + len, y);
+      ctx.stroke();
+    }
+  }
+
+  renderHighwayWorld(ctx, w, h, gameState) {
+    const hw = gameState.highwayEngine;
+    const groundY = hw.groundY;
+
+    // Cielo atardecer en carretera
+    const grad = ctx.createLinearGradient(0, 0, 0, groundY);
+    grad.addColorStop(0, '#0f172a');
+    grad.addColorStop(0.55, '#1e3a8a');
+    grad.addColorStop(1, '#f97316');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, groundY);
+
+    // Sol en el horizonte
+    ctx.fillStyle = 'rgba(253, 224, 71, 0.85)';
+    ctx.beginPath();
+    ctx.arc(w * 0.78, groundY - 40, 34, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Montañas lejanas
+    this.renderFarMountains(ctx, w, h, GAME_MODES.CITY);
+
+    // Cables y postes telefónicos de fondo (efecto ventana de carro)
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.55)';
+    ctx.lineWidth = 1.5;
+    const poleSpacing = 240;
+    for (let px = -hw.poleOffset; px < w + poleSpacing; px += poleSpacing) {
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.5)';
+      ctx.fillRect(px, groundY - 120, 4, 120);
+      ctx.fillRect(px - 10, groundY - 115, 24, 3);
+      // Cable curvo hacia el siguiente poste
+      ctx.beginPath();
+      ctx.moveTo(px + 2, groundY - 114);
+      ctx.quadraticCurveTo(px + poleSpacing / 2, groundY - 90, px + poleSpacing + 2, groundY - 114);
+      ctx.stroke();
+    }
+
+    // Carretera / Asfalto
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(0, groundY, w, h - groundY);
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(0, groundY, w, 5);
+
+    // Línea amarilla discontinua de carretera
+    ctx.fillStyle = '#facc15';
+    const dashOffset = (hw.poleOffset * 1.5) % 60;
+    for (let dx = -dashOffset; dx < w; dx += 60) {
+      ctx.fillRect(dx, groundY + 28, 32, 4);
+    }
+
+    // Estrellas coleccionables
+    for (const st of hw.stars) {
+      const bob = Math.sin(this.elapsedTime * 7 + st.x * 0.05) * 4;
+      this.sprites.drawGeoShape(ctx, 'STAR', st.x, st.y + bob, st.radius, '#facc15', false);
+    }
+
+    // Obstáculos en el horizonte
+    for (const obs of hw.obstacles) {
+      if (obs.type === 'BUSH') {
+        ctx.fillStyle = '#15803d';
+        ctx.beginPath();
+        ctx.arc(obs.x + 10, obs.y + 18, 12, 0, Math.PI * 2);
+        ctx.arc(obs.x + 22, obs.y + 14, 14, 0, Math.PI * 2);
+        ctx.arc(obs.x + 30, obs.y + 20, 10, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (obs.type === 'SIGN') {
+        ctx.fillStyle = '#64748b';
+        ctx.fillRect(obs.x + 9, obs.y + 16, 4, obs.height - 16);
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.moveTo(obs.x + 11, obs.y);
+        ctx.lineTo(obs.x + 22, obs.y + 11);
+        ctx.lineTo(obs.x + 11, obs.y + 22);
+        ctx.lineTo(obs.x, obs.y + 11);
+        ctx.closePath();
+        ctx.fill();
+      } else if (obs.type === 'FENCE') {
+        ctx.fillStyle = '#9a3412';
+        ctx.fillRect(obs.x + 4, obs.y, 6, obs.height);
+        ctx.fillRect(obs.x + obs.width - 10, obs.y, 6, obs.height);
+        ctx.fillStyle = '#c2410c';
+        ctx.fillRect(obs.x, obs.y + 8, obs.width, 6);
+        ctx.fillRect(obs.x, obs.y + 22, obs.width, 6);
+      } else if (obs.type === 'CAR') {
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(obs.x, obs.y + 12, obs.width, 16);
+        ctx.fillRect(obs.x + 12, obs.y + 2, obs.width - 28, 12);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(obs.x + 16, obs.y + 4, 14, 8);
+        ctx.fillRect(obs.x + 34, obs.y + 4, 14, 8);
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(obs.x + 14, obs.y + 28, 6, 0, Math.PI * 2);
+        ctx.arc(obs.x + obs.width - 14, obs.y + 28, 6, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (obs.type === 'POLE') {
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(obs.x + 5, obs.y, 8, obs.height);
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(obs.x - 4, obs.y + 8, 26, 4);
+      }
+    }
+
+    // Corredor saltando por la ventana
+    const r = hw.runner;
+    const blink = r.invulnTimer > 0 && Math.floor(this.elapsedTime * 16) % 2 === 0;
+    if (!blink) {
+      ctx.save();
+      ctx.translate(r.x, r.y);
+      // Sombra en el suelo
+      const shadowScale = Math.max(0.3, 1 - (groundY - r.y) / 140);
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(0, groundY - r.y + 2, 12 * shadowScale, 4 * shadowScale, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Piernas animadas
+      const legSwing = r.grounded ? Math.sin(r.runPhase) * 6 : 5;
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-5 + legSwing, -12, 4, 12);
+      ctx.fillRect(1 - legSwing, -12, 4, 12);
+      // Torso (camiseta neón cyan)
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(-7, -25, 14, 14);
+      // Capa / bufanda al viento
+      ctx.fillStyle = '#f43f5e';
+      ctx.fillRect(-16, -24 + Math.sin(this.elapsedTime * 15) * 2, 10, 4);
+      // Cabeza
+      ctx.fillStyle = '#fed7aa';
+      ctx.fillRect(-5, -35, 10, 10);
+      // Gorra retro
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(-6, -37, 12, 4);
+      ctx.fillRect(2, -35, 6, 2);
+      ctx.restore();
     }
   }
 
@@ -657,6 +822,36 @@ export class CanvasRenderer {
     ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
     ctx.fillRect(0, 0, w, 46);
 
+    if (gameState.mode === GAME_MODES.HIGHWAY) {
+      const hw = gameState.highwayEngine;
+      ctx.font = 'bold 13px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#f43f5e';
+      ctx.textAlign = 'left';
+      const hearts = '❤️'.repeat(Math.max(0, hw.lives)) + '🖤'.repeat(Math.max(0, hw.maxLives - hw.lives));
+      ctx.fillText(`VIDAS: ${hearts}`, 16, 27);
+
+      ctx.font = 'bold 12px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#38bdf8';
+      ctx.textAlign = 'center';
+      ctx.fillText('🏃 SALTO EN CARRETERA • [ESPACIO] SALTAR / DOBLE SALTO', w / 2, 18);
+
+      const spd = Math.round(gameState.plane.speed);
+      ctx.font = '10px "JetBrains Mono", monospace';
+      ctx.fillStyle = spd > 320 ? '#ef4444' : spd > 240 ? '#facc15' : '#94a3b8';
+      ctx.fillText(`VELOCIDAD: ${spd} KM/H  |  RÉCORD: ${Math.max(gameState.highScore, scorer.score)}`, w / 2, 35);
+
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 14px "JetBrains Mono", monospace';
+      ctx.fillText(`SCORE: ${scorer.score}`, w - 16, 22);
+      if (scorer.combo > 1) {
+        ctx.fillStyle = '#f43f5e';
+        ctx.font = 'bold 11px "JetBrains Mono", monospace';
+        ctx.fillText(`COMBO x${scorer.combo}! 🔥`, w - 16, 37);
+      }
+      return;
+    }
+
     // JOY-O-METER (Izquierda)
     ctx.font = 'bold 11px "JetBrains Mono", monospace';
     ctx.fillStyle = '#f43f5e';
@@ -673,7 +868,6 @@ export class CanvasRenderer {
     ctx.fillStyle = joyColor;
     ctx.fillRect(16, 24, barWidth * joyPct, barHeight);
 
-    // Marcador de línea mínima requerida para avanzar de nivel
     const minJoyX = 16 + barWidth * (levelCfg.minJoy / 100);
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(minJoyX - 1, 22, 2, 15);
@@ -688,9 +882,10 @@ export class CanvasRenderer {
     ctx.textAlign = 'center';
     ctx.fillText(`${levelCfg.title.toUpperCase()} • ${currentBiome.accentEmoji} ${currentBiome.name.toUpperCase()}`, w / 2, 18);
 
+    const spd = Math.round(gameState.plane.speed);
     ctx.font = '10px "JetBrains Mono", monospace';
-    ctx.fillStyle = '#94a3b8';
-    ctx.fillText(`VELOCIDAD: ${Math.round(gameState.plane.speed)} KT  |  META: ${scorer.score}/${levelCfg.targetScore} (JOY ≥ ${levelCfg.minJoy}%)`, w / 2, 35);
+    ctx.fillStyle = spd > 280 ? '#ef4444' : spd > 195 ? '#facc15' : '#94a3b8';
+    ctx.fillText(`VELOCIDAD: ${spd} KT  |  META: ${scorer.score}/${levelCfg.targetScore} (JOY ≥ ${levelCfg.minJoy}%)`, w / 2, 35);
 
     // PUNTUACIÓN Y COMBO (Derecha)
     ctx.textAlign = 'right';
@@ -750,68 +945,66 @@ export class CanvasRenderer {
   }
 
   renderStartScreen(ctx, w, h, gameState) {
-    ctx.fillStyle = 'rgba(9, 13, 22, 0.9)';
+    ctx.fillStyle = 'rgba(9, 13, 22, 0.92)';
     ctx.fillRect(0, 0, w, h);
 
     ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 28px "JetBrains Mono", monospace';
+    ctx.font = 'bold 26px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('✈️ XATRUCH JOY BOMBER', w / 2, h / 2 - 125);
+    ctx.fillText('✈️ XATRUCH JOY BOMBER ARCADE', w / 2, h / 2 - 135);
 
     ctx.fillStyle = '#cbd5e1';
     ctx.font = '13px "Inter", sans-serif';
-    ctx.fillText('Elige tu modo de juego para despegar:', w / 2, h / 2 - 92);
+    ctx.fillText('Elige un modo de juego para comenzar:', w / 2, h / 2 - 102);
 
-    const cardW = 290;
-    const cardH = 145;
-    const gap = 28;
-    const startX = (w - (cardW * 2 + gap)) / 2;
-    const cardY = h / 2 - 65;
+    const cardW = 240;
+    const cardH = 160;
+    const gap = 18;
+    const startX = (w - (cardW * 3 + gap * 2)) / 2;
+    const cardY = h / 2 - 72;
 
     this.startModeButtons = [
-      {
-        mode: GAME_MODES.CITY,
-        x: startX,
-        y: cardY,
-        w: cardW,
-        h: cardH
-      },
-      {
-        mode: GAME_MODES.GEOMETRY,
-        x: startX + cardW + gap,
-        y: cardY,
-        w: cardW,
-        h: cardH
-      }
+      { mode: GAME_MODES.CITY, x: startX, y: cardY, w: cardW, h: cardH },
+      { mode: GAME_MODES.GEOMETRY, x: startX + cardW + gap, y: cardY, w: cardW, h: cardH },
+      { mode: GAME_MODES.HIGHWAY, x: startX + (cardW + gap) * 2, y: cardY, w: cardW, h: cardH }
     ];
 
-    // Tarjeta 1: Modo Ciudad (Honduras)
     this.drawModeCard(
       ctx,
       this.startModeButtons[0],
       '🏙️ MODO CIUDAD',
-      'Tegucigalpa & San Pedro Sula',
-      'Apunta a la gente: agua, comida, biblias.',
-      'Meta: 2,200 pts + Joy ≥ 65%',
-      '[1] CLIC PARA VOLAR',
+      'Tegucigalpa & SPS',
+      'Apunta a la gente y fuegos.',
+      'Meta: 8,500 pts + Joy ≥ 65%',
+      '[1] JUGAR CIUDAD',
       '#38bdf8'
     );
 
-    // Tarjeta 2: Modo Geometría
     this.drawModeCard(
       ctx,
       this.startModeButtons[1],
-      '📐 MODO GEOMETRÍA',
-      'Nivel 1 (Básicas) & Nivel 2 (Complejas)',
-      'Encaja figuras en sus bases de precisión.',
-      'Meta: 1,000 pts + Joy ≥ 55%',
-      '[2] CLIC PARA VOLAR',
+      '📐 GEOMETRÍA',
+      'Básicas & Complejas',
+      'Encaja figuras con precisión.',
+      'Meta: 5,500 pts + Joy ≥ 55%',
+      '[2] JUGAR FIGURAS',
       '#a855f7'
+    );
+
+    this.drawModeCard(
+      ctx,
+      this.startModeButtons[2],
+      '🏃 EN CARRETERA',
+      'Vista de Ventana',
+      'Salta postes y carros con',
+      '[ESPACIO] (Doble Salto!).',
+      '[3] JUGAR CARRETERA',
+      '#f97316'
     );
 
     ctx.fillStyle = '#94a3b8';
     ctx.font = '11px "JetBrains Mono", monospace';
-    ctx.fillText('Presiona [1], [2], [ESPACIO] o haz clic en una tarjeta para iniciar', w / 2, cardY + cardH + 38);
+    ctx.fillText('Presiona [1], [2], [3] o haz clic en una tarjeta para iniciar', w / 2, cardY + cardH + 40);
   }
 
   drawModeCard(ctx, box, title, subtitle, desc1, desc2, cta, accent) {
@@ -828,7 +1021,7 @@ export class CanvasRenderer {
     ctx.textAlign = 'center';
 
     ctx.fillStyle = accent;
-    ctx.font = 'bold 16px "JetBrains Mono", monospace';
+    ctx.font = 'bold 15px "JetBrains Mono", monospace';
     ctx.fillText(title, cx, box.y + 30);
 
     ctx.fillStyle = '#f8fafc';
@@ -837,12 +1030,12 @@ export class CanvasRenderer {
 
     ctx.fillStyle = '#94a3b8';
     ctx.font = '11px "Inter", sans-serif';
-    ctx.fillText(desc1, cx, box.y + 76);
-    ctx.fillText(desc2, cx, box.y + 94);
+    ctx.fillText(desc1, cx, box.y + 80);
+    ctx.fillText(desc2, cx, box.y + 98);
 
     ctx.fillStyle = '#22c55e';
     ctx.font = 'bold 12px "JetBrains Mono", monospace';
-    ctx.fillText(cta, cx, box.y + 125);
+    ctx.fillText(cta, cx, box.y + 136);
   }
 
   renderLevelCompleteScreen(ctx, w, h, gameState) {
@@ -878,20 +1071,31 @@ export class CanvasRenderer {
     ctx.fillStyle = '#facc15';
     ctx.font = 'bold 28px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('🏆 ¡MISIÓN CUMPLIDA, GENERAL!', w / 2, h / 2 - 65);
+    ctx.fillText('🏆 ¡MISIÓN CUMPLIDA, GENERAL!', w / 2, h / 2 - 75);
+
+    if (gameState.isNewRecord) {
+      ctx.fillStyle = '#4ade80';
+      ctx.font = 'bold 14px "JetBrains Mono", monospace';
+      ctx.fillText('🌟 ¡NUEVO RÉCORD HISTÓRICO! 🌟', w / 2, h / 2 - 42);
+    }
 
     ctx.fillStyle = '#f8fafc';
     ctx.font = '14px "Inter", sans-serif';
-    ctx.fillText('Llevaste alegría máxima a todo el territorio.', w / 2, h / 2 - 28);
+    ctx.fillText('Llevaste alegría máxima a todo el territorio.', w / 2, h / 2 - 16);
 
     ctx.fillStyle = '#fbbf24';
     ctx.font = 'bold 20px "JetBrains Mono", monospace';
-    ctx.fillText(`SCORE FINAL: ${gameState.dropEngine.scorer.score}`, w / 2, h / 2 + 15);
-    ctx.fillText(`MÁXIMO COMBO: x${gameState.dropEngine.scorer.maxCombo}`, w / 2, h / 2 + 45);
-
+    ctx.fillText(`SCORE FINAL: ${gameState.dropEngine.scorer.score}`, w / 2, h / 2 + 20);
     ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 16px "JetBrains Mono", monospace';
+    ctx.fillText(`🏆 HIGH SCORE: ${gameState.highScore}`, w / 2, h / 2 + 48);
+    ctx.fillStyle = '#f43f5e';
     ctx.font = 'bold 14px "JetBrains Mono", monospace';
-    ctx.fillText('🔄 PRESIONA [ESPACIO] O TOCA PARA VOLVER AL MENÚ', w / 2, h / 2 + 95);
+    ctx.fillText(`MÁXIMO COMBO: x${gameState.dropEngine.scorer.maxCombo}`, w / 2, h / 2 + 74);
+
+    ctx.fillStyle = '#22c55e';
+    ctx.font = 'bold 14px "JetBrains Mono", monospace';
+    ctx.fillText('🔄 PRESIONA [ESPACIO] O TOCA PARA VOLVER AL MENÚ', w / 2, h / 2 + 115);
   }
 
   renderGameOverScreen(ctx, w, h, gameState) {
@@ -901,25 +1105,44 @@ export class CanvasRenderer {
     ctx.fillStyle = '#ef4444';
     ctx.font = 'bold 26px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('💔 MISIÓN TERMINADA', w / 2, h / 2 - 55);
+    ctx.fillText('💔 MISIÓN TERMINADA', w / 2, h / 2 - 75);
+
+    if (gameState.isNewRecord) {
+      ctx.fillStyle = '#4ade80';
+      ctx.font = 'bold 14px "JetBrains Mono", monospace';
+      ctx.fillText('🌟 ¡NUEVO RÉCORD EN ESTE MODO! 🌟', w / 2, h / 2 - 44);
+    }
 
     ctx.fillStyle = '#f8fafc';
     ctx.font = '14px "Inter", sans-serif';
-    ctx.fillText('El Joy-O-Meter cayó a 0%.', w / 2, h / 2 - 20);
+    ctx.fillText(
+      gameState.mode === GAME_MODES.HIGHWAY
+        ? 'Te quedaste sin vidas en la carretera.'
+        : 'El Joy-O-Meter cayó a 0%.',
+      w / 2,
+      h / 2 - 18
+    );
 
     ctx.fillStyle = '#fbbf24';
     ctx.font = 'bold 20px "JetBrains Mono", monospace';
-    ctx.fillText(`SCORE FINAL: ${gameState.dropEngine.scorer.score}`, w / 2, h / 2 + 20);
-    ctx.fillText(`MÁXIMO COMBO: x${gameState.dropEngine.scorer.maxCombo}`, w / 2, h / 2 + 48);
+    ctx.fillText(`SCORE FINAL: ${gameState.dropEngine.scorer.score}`, w / 2, h / 2 + 18);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 16px "JetBrains Mono", monospace';
+    ctx.fillText(`🏆 HIGH SCORE: ${gameState.highScore}`, w / 2, h / 2 + 46);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = 'bold 13px "JetBrains Mono", monospace';
+    ctx.fillText(`MÁXIMO COMBO: x${gameState.dropEngine.scorer.maxCombo}`, w / 2, h / 2 + 72);
 
     if (gameState.mode === GAME_MODES.GEOMETRY) {
       ctx.fillStyle = '#22d3ee';
-      ctx.font = 'bold 14px "JetBrains Mono", monospace';
-      ctx.fillText(`TIROS PERFECTOS: ${gameState.dropEngine.scorer.perfectDrops}`, w / 2, h / 2 + 76);
+      ctx.font = 'bold 13px "JetBrains Mono", monospace';
+      ctx.fillText(`TIROS PERFECTOS: ${gameState.dropEngine.scorer.perfectDrops}`, w / 2, h / 2 + 94);
     }
 
-    ctx.fillStyle = '#38bdf8';
+    ctx.fillStyle = '#22c55e';
     ctx.font = 'bold 14px "JetBrains Mono", monospace';
-    ctx.fillText('🔄 PRESIONA [ESPACIO] O TOCA PARA REINTENTAR', w / 2, h / 2 + 112);
+    ctx.fillText('🔄 PRESIONA [ESPACIO] O TOCA PARA REINTENTAR', w / 2, h / 2 + 126);
   }
 }

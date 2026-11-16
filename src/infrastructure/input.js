@@ -1,10 +1,11 @@
 export class InputHandler {
-  constructor(onDrop, onSelectNext, onSelectPrev, onSelectIndex, onActionTrigger) {
+  constructor(onDrop, onSelectNext, onSelectPrev, onSelectIndex, onActionTrigger, onCanvasClick) {
     this.onDrop = onDrop;
     this.onSelectNext = onSelectNext;
     this.onSelectPrev = onSelectPrev;
     this.onSelectIndex = onSelectIndex;
     this.onActionTrigger = onActionTrigger;
+    this.onCanvasClick = onCanvasClick;
 
     this.state = {
       speedUp: false,
@@ -20,6 +21,19 @@ export class InputHandler {
         e.preventDefault();
       }
 
+      // Velocidad continua (A / D o Flechas Arriba / Abajo) sí puede mantenerse presionada
+      if (e.code === 'KeyD' || e.code === 'ArrowUp') {
+        this.state.speedUp = true;
+        return;
+      }
+      if (e.code === 'KeyA' || e.code === 'ArrowDown') {
+        this.state.slowDown = true;
+        return;
+      }
+
+      // Evitar trampa/glitch por mantener presionada la barra espaciadora u otras teclas de acción
+      if (e.repeat) return;
+
       if (e.code === 'Space') {
         this.onActionTrigger();
       } else if (e.key === '1') {
@@ -34,10 +48,6 @@ export class InputHandler {
         this.onSelectPrev();
       } else if (e.code === 'KeyE' || e.code === 'ArrowRight') {
         this.onSelectNext();
-      } else if (e.code === 'KeyD' || e.code === 'ArrowUp') {
-        this.state.speedUp = true;
-      } else if (e.code === 'KeyA' || e.code === 'ArrowDown') {
-        this.state.slowDown = true;
       }
     });
 
@@ -52,14 +62,20 @@ export class InputHandler {
 
   attachCanvasEvents(canvas) {
     canvas.addEventListener('pointerdown', (e) => {
-      // Si el clic es en la parte inferior (carrusel)
       const rect = canvas.getBoundingClientRect();
-      const clickY = e.clientY - rect.top;
-      const clickX = e.clientX - rect.left;
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const clickX = (e.clientX - rect.left) * scaleX;
+      const clickY = (e.clientY - rect.top) * scaleY;
 
+      // Permitir manejo personalizado (ej. tarjetas del menú de inicio)
+      if (this.onCanvasClick && this.onCanvasClick(clickX, clickY)) {
+        return;
+      }
+
+      // Si el clic es en la parte inferior (carrusel)
       if (clickY > canvas.height - 60) {
-        // Clic en el carrusel
-        const slotSize = 46;
+        const slotSize = 48;
         const gap = 10;
         const totalW = 4 * slotSize + 3 * gap;
         const startX = (canvas.width - totalW) / 2;
@@ -73,7 +89,6 @@ export class InputHandler {
         }
       }
 
-      // Si no es el carrusel, es acción principal (Drop o Start)
       this.onActionTrigger();
     });
   }

@@ -12,12 +12,30 @@ window.addEventListener('DOMContentLoaded', () => {
   const audio = new RetroAudioSynth();
   const gameState = new GameState(canvas.width, canvas.height);
 
+  const btnPrev = document.getElementById('btnPrev');
+  const btnNext = document.getElementById('btnNext');
+  const btnDrop = document.getElementById('btnDrop');
+  const btnMute = document.getElementById('btnMute');
+  const btnMode = document.getElementById('btnMode');
+
+  const syncModeButtonLabel = () => {
+    if (btnMode) {
+      btnMode.textContent =
+        gameState.mode === GAME_MODES.CITY ? '🎮 Modo: Ciudad' : '📐 Modo: Geometría';
+    }
+  };
+
   let lastTime = performance.now();
 
   const triggerAction = () => {
     audio.ensureContext();
     if (gameState.status === GAME_STATUS.START) {
-      gameState.status = GAME_STATUS.PLAYING;
+      gameState.startGame(gameState.mode);
+      syncModeButtonLabel();
+    } else if (gameState.status === GAME_STATUS.LEVEL_COMPLETE) {
+      gameState.advanceToNextLevel();
+    } else if (gameState.status === GAME_STATUS.VICTORY) {
+      gameState.status = GAME_STATUS.START;
     } else if (gameState.status === GAME_STATUS.GAMEOVER) {
       gameState.restart();
     } else if (gameState.status === GAME_STATUS.PLAYING) {
@@ -26,6 +44,44 @@ window.addEventListener('DOMContentLoaded', () => {
         audio.playDrop();
       }
     }
+  };
+
+  const handleCanvasClick = (clickX, clickY) => {
+    if (gameState.status !== GAME_STATUS.START) return false;
+
+    for (const btn of renderer.startModeButtons) {
+      if (
+        clickX >= btn.x &&
+        clickX <= btn.x + btn.w &&
+        clickY >= btn.y &&
+        clickY <= btn.y + btn.h
+      ) {
+        audio.ensureContext();
+        audio.playCarouselClick();
+        gameState.startGame(btn.mode);
+        syncModeButtonLabel();
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const handleSelectIndex = (idx) => {
+    audio.ensureContext();
+    if (gameState.status === GAME_STATUS.START) {
+      if (idx === 0) {
+        gameState.startGame(GAME_MODES.CITY);
+        syncModeButtonLabel();
+        audio.playCarouselClick();
+      } else if (idx === 1) {
+        gameState.startGame(GAME_MODES.GEOMETRY);
+        syncModeButtonLabel();
+        audio.playCarouselClick();
+      }
+      return;
+    }
+    gameState.selectItemByIndex(idx);
+    audio.playCarouselClick();
   };
 
   const inputHandler = new InputHandler(
@@ -38,11 +94,9 @@ window.addEventListener('DOMContentLoaded', () => {
       gameState.selectPrevItem();
       audio.playCarouselClick();
     },
-    (idx) => {
-      gameState.selectItemByIndex(idx);
-      audio.playCarouselClick();
-    },
-    () => triggerAction()
+    handleSelectIndex,
+    () => triggerAction(),
+    handleCanvasClick
   );
 
   inputHandler.attachCanvasEvents(canvas);
@@ -73,13 +127,6 @@ window.addEventListener('DOMContentLoaded', () => {
     return result;
   };
 
-  // Controles en pantalla táctiles / botones auxiliares
-  const btnPrev = document.getElementById('btnPrev');
-  const btnNext = document.getElementById('btnNext');
-  const btnDrop = document.getElementById('btnDrop');
-  const btnMute = document.getElementById('btnMute');
-  const btnMode = document.getElementById('btnMode');
-
   if (btnPrev) {
     btnPrev.addEventListener('click', () => {
       gameState.selectPrevItem();
@@ -109,19 +156,16 @@ window.addEventListener('DOMContentLoaded', () => {
         gameState.mode === GAME_MODES.CITY ? GAME_MODES.GEOMETRY : GAME_MODES.CITY;
       gameState.setMode(nextMode);
       gameState.status = GAME_STATUS.START;
-      btnMode.textContent =
-        nextMode === GAME_MODES.CITY ? '🎮 Modo: Ciudad' : '📐 Modo: Geometría';
+      syncModeButtonLabel();
     });
   }
 
-  // Redimensionar pantalla
   window.addEventListener('resize', () => {
     renderer.resize();
     gameState.canvasWidth = canvas.width;
     gameState.canvasHeight = canvas.height;
   });
 
-  // Bucle principal de juego (Game Loop a 60 FPS)
   function loop(currentTime) {
     const dt = Math.min((currentTime - lastTime) / 1000, 0.1);
     lastTime = currentTime;

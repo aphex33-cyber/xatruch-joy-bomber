@@ -11,16 +11,12 @@ export class BallisticsEngine {
    * Actualiza la posición y velocidad de un proyectil según dt (segundos)
    */
   updateProjectile(proj, dt) {
-    // Aplicar resistencia al aire
     proj.vx *= Math.pow(proj.drag || 0.98, dt * 60);
-    // Aplicar gravedad
     proj.vy += this.gravity * (proj.mass || 1.0) * dt;
 
-    // Actualizar coordenadas
     proj.x += proj.vx * dt;
     proj.y += proj.vy * dt;
 
-    // Rotación estética en vuelo
     proj.rotation += (proj.vx * 0.03 + 0.8) * dt;
 
     return proj;
@@ -36,14 +32,57 @@ export class BallisticsEngine {
       item: itemConfig,
       x: planeX,
       y: planeY + 12,
-      vx: planeVx * 0.95, // hereda la inercia del avión
-      vy: planeVy + 60,   // impulso inicial hacia abajo
+      vx: planeVx * 0.95,
+      vy: planeVy + 60,
       drag: itemConfig.drag,
       mass: itemConfig.mass,
       rotation: 0,
       active: true,
       timeInAir: 0
     };
+  }
+
+  /**
+   * Crea un objeto que rebota y rueda por el suelo tras caer
+   */
+  spawnRollingItem(itemConfig, x, y, vx) {
+    return {
+      item: itemConfig,
+      x,
+      y: y - 7,
+      vx: vx * 0.52, // conserva parte del impulso horizontal para rodar
+      vy: -85,       // pequeño rebote inicial
+      rotation: 0,
+      life: 1.6,
+      maxLife: 1.6
+    };
+  }
+
+  /**
+   * Actualiza el rebote y rodamiento en el suelo
+   */
+  updateRollingItem(r, dt, groundY) {
+    r.vy += this.gravity * dt;
+    r.x += r.vx * dt;
+    r.y += r.vy * dt;
+
+    const floorY = groundY - 7;
+    if (r.y >= floorY) {
+      r.y = floorY;
+      // Rebote amortiguado si aún trae velocidad vertical
+      if (r.vy > 45) {
+        r.vy = -r.vy * 0.35;
+      } else {
+        r.vy = 0;
+      }
+      // Fricción de rodamiento en el suelo
+      r.vx *= Math.pow(0.88, dt * 60);
+    }
+
+    // Giro proporcional a la velocidad horizontal (efecto de rodar)
+    r.rotation += (r.vx / 12) * dt;
+    r.life -= dt;
+    return r;
   }
 
   /**

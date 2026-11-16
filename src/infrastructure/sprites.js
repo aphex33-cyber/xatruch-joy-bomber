@@ -139,11 +139,33 @@ export class SpriteLibrary {
     ctx.translate(plane.x, plane.y);
     ctx.rotate(plane.tilt);
 
-    // Bufanda del piloto ondeando al viento
+    // Banda / bufanda azul y blanca ondeando detrás del General Xatruch
     const scarfWave = Math.sin(time * 18) * 3;
-    ctx.fillStyle = '#f43f5e';
-    ctx.fillRect(28, 8 + scarfWave * 0.4, 8, 3);
-    ctx.fillRect(21, 9 + scarfWave, 8, 3);
+    ctx.fillStyle = '#0284c7';
+    ctx.fillRect(28, -2 + scarfWave * 0.4, 10, 3);
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(20, -1 + scarfWave, 9, 3);
+
+    // Piloto: General Florencio Xatruch en cabina abierta superior
+    // Uniforme azul marino con charreteras doradas
+    ctx.fillStyle = '#1e3a8a';
+    ctx.fillRect(36, 4, 12, 8);
+    ctx.fillStyle = '#fbbf24'; // Charreteras doradas
+    ctx.fillRect(35, 4, 3, 3);
+    ctx.fillRect(46, 4, 3, 3);
+    // Rostro
+    ctx.fillStyle = '#fed7aa';
+    ctx.fillRect(38, -4, 8, 8);
+    // Bigote y barba distintiva del General Xatruch
+    ctx.fillStyle = '#292524';
+    ctx.fillRect(38, 1, 8, 3);
+    ctx.fillRect(40, 0, 6, 2);
+    // Bicornio / Kepi militar oscuro con borde dorado
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(36, -9, 12, 5);
+    ctx.fillRect(39, -12, 6, 3);
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillRect(36, -5, 12, 1.5);
 
     // Sprite principal del avión
     ctx.drawImage(this.planeSprite, 0, 0);
@@ -222,6 +244,41 @@ export class SpriteLibrary {
         if (i === 0) ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
         else ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
       }
+      ctx.closePath();
+    } else if (shapeType === ITEM_TYPES.HEXAGON) {
+      for (let i = 0; i < 6; i++) {
+        const angle = (i * Math.PI) / 3 - Math.PI / 6;
+        const hx = Math.cos(angle) * radius * 0.92;
+        const hy = Math.sin(angle) * radius * 0.92;
+        if (i === 0) ctx.moveTo(hx, hy);
+        else ctx.lineTo(hx, hy);
+      }
+      ctx.closePath();
+    } else if (shapeType === ITEM_TYPES.DIAMOND) {
+      ctx.moveTo(0, -radius);
+      ctx.lineTo(radius * 0.72, 0);
+      ctx.lineTo(0, radius);
+      ctx.lineTo(-radius * 0.72, 0);
+      ctx.closePath();
+    } else if (shapeType === ITEM_TYPES.CROSS) {
+      const a = radius * 0.34;
+      const b = radius * 0.9;
+      ctx.moveTo(-a, -b);
+      ctx.lineTo(a, -b);
+      ctx.lineTo(a, -a);
+      ctx.lineTo(b, -a);
+      ctx.lineTo(b, a);
+      ctx.lineTo(a, a);
+      ctx.lineTo(a, b);
+      ctx.lineTo(-a, b);
+      ctx.lineTo(-a, a);
+      ctx.lineTo(-b, a);
+      ctx.lineTo(-b, -a);
+      ctx.lineTo(-a, -a);
+      ctx.closePath();
+    } else if (shapeType === ITEM_TYPES.CRESCENT) {
+      ctx.arc(0, 0, radius * 0.88, 0.45, Math.PI * 2 - 0.45, false);
+      ctx.arc(radius * 0.35, 0, radius * 0.7, Math.PI * 2 - 0.75, 0.75, true);
       ctx.closePath();
     }
 

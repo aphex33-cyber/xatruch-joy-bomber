@@ -1,5 +1,5 @@
 /**
- * DOMINIO: Definiciones de objetos, biomas, modos de juego y reglas de compatibilidad
+ * DOMINIO: Definiciones de objetos, biomas, niveles, modos de juego y reglas de compatibilidad
  * Lógica pura sin dependencias de UI o librerías externas.
  */
 
@@ -13,11 +13,16 @@ export const ITEM_TYPES = {
   FOOD: 'FOOD',
   BIBLE: 'BIBLE',
   TOY: 'TOY',
-  // Piezas geométricas para el Nivel de Precisión
+  // Nivel 1 Geometría (Básicas)
   TRIANGLE: 'TRIANGLE',
   SQUARE: 'SQUARE',
   CIRCLE: 'CIRCLE',
-  STAR: 'STAR'
+  STAR: 'STAR',
+  // Nivel 2 Geometría (Complejas)
+  HEXAGON: 'HEXAGON',
+  DIAMOND: 'DIAMOND',
+  CROSS: 'CROSS',
+  CRESCENT: 'CRESCENT'
 };
 
 export const ITEMS_CATALOG = {
@@ -52,7 +57,7 @@ export const ITEMS_CATALOG = {
     splashColor: '#9333ea',
     mass: 0.95,
     drag: 0.98,
-    description: 'Paz espiritual para corazones vacíos y magnates estresados'
+    description: 'Paz espiritual para corazones vacíos y ejecutivos'
   },
   [ITEM_TYPES.TOY]: {
     id: ITEM_TYPES.TOY,
@@ -65,7 +70,7 @@ export const ITEMS_CATALOG = {
     drag: 0.975,
     description: 'Alegría pura, juguetes y fiesta para los niños'
   },
-  // Catálogo Geométrico
+  // Geometría Nivel 1
   [ITEM_TYPES.TRIANGLE]: {
     id: ITEM_TYPES.TRIANGLE,
     name: 'Prisma Triangular',
@@ -74,9 +79,7 @@ export const ITEMS_CATALOG = {
     color: '#22d3ee',
     splashColor: '#06b6d4',
     mass: 1.05,
-    drag: 0.99,
-    shape: 'TRIANGLE',
-    description: 'Encaja en bases triangulares'
+    drag: 0.99
   },
   [ITEM_TYPES.SQUARE]: {
     id: ITEM_TYPES.SQUARE,
@@ -86,9 +89,7 @@ export const ITEMS_CATALOG = {
     color: '#a855f7',
     splashColor: '#9333ea',
     mass: 1.05,
-    drag: 0.99,
-    shape: 'SQUARE',
-    description: 'Encaja en bases cuadradas'
+    drag: 0.99
   },
   [ITEM_TYPES.CIRCLE]: {
     id: ITEM_TYPES.CIRCLE,
@@ -98,9 +99,7 @@ export const ITEMS_CATALOG = {
     color: '#facc15',
     splashColor: '#eab308',
     mass: 1.05,
-    drag: 0.99,
-    shape: 'CIRCLE',
-    description: 'Encaja en bases circulares'
+    drag: 0.99
   },
   [ITEM_TYPES.STAR]: {
     id: ITEM_TYPES.STAR,
@@ -110,9 +109,48 @@ export const ITEMS_CATALOG = {
     color: '#f43f5e',
     splashColor: '#e11d48',
     mass: 1.05,
-    drag: 0.99,
-    shape: 'STAR',
-    description: 'Encaja en bases de estrella'
+    drag: 0.99
+  },
+  // Geometría Nivel 2 (Complejas)
+  [ITEM_TYPES.HEXAGON]: {
+    id: ITEM_TYPES.HEXAGON,
+    name: 'Hexágono',
+    shortName: 'Hexágono',
+    icon: '⬡',
+    color: '#34d399',
+    splashColor: '#10b981',
+    mass: 1.08,
+    drag: 0.99
+  },
+  [ITEM_TYPES.DIAMOND]: {
+    id: ITEM_TYPES.DIAMOND,
+    name: 'Rombo Diamante',
+    shortName: 'Rombo',
+    icon: '◆',
+    color: '#f472b6',
+    splashColor: '#ec4899',
+    mass: 1.08,
+    drag: 0.99
+  },
+  [ITEM_TYPES.CROSS]: {
+    id: ITEM_TYPES.CROSS,
+    name: 'Cruz Táctica',
+    shortName: 'Cruz',
+    icon: '✚',
+    color: '#38bdf8',
+    splashColor: '#0284c7',
+    mass: 1.08,
+    drag: 0.99
+  },
+  [ITEM_TYPES.CRESCENT]: {
+    id: ITEM_TYPES.CRESCENT,
+    name: 'Media Luna',
+    shortName: 'Luna',
+    icon: '🌙',
+    color: '#fbbf24',
+    splashColor: '#d97706',
+    mass: 1.08,
+    drag: 0.99
   }
 };
 
@@ -127,39 +165,39 @@ export const BIOME_TYPES = {
 export const BIOMES_CATALOG = {
   [BIOME_TYPES.DESERT]: {
     id: BIOME_TYPES.DESERT,
-    name: 'Desierto Sediento',
+    name: 'Zona Seca / Lomas',
     groundColor: '#d97706',
     secondaryColor: '#f59e0b',
     skyGradient: ['#fdba74', '#fed7aa'],
     accentEmoji: '🏜️',
     neededItems: [ITEM_TYPES.WATER, ITEM_TYPES.FOOD],
-    happyMessage: '¡Agua bendita en el desierto! ¡La tierra florece!',
-    unhappyMessage: '¡Aquí nos morimos de sed, necesitamos agua!',
+    happyMessage: '¡Agua bendita! ¡La tierra florece!',
+    unhappyMessage: '¡Aquí hace sed, necesitamos agua o comida!',
     weightScore: 100
   },
   [BIOME_TYPES.RICH_DISTRICT]: {
     id: BIOME_TYPES.RICH_DISTRICT,
-    name: 'Distrito Financiero / Mansiones',
+    name: 'Centro Cívico / Residencial',
     groundColor: '#334155',
     secondaryColor: '#64748b',
     skyGradient: ['#1e3a8a', '#38bdf8'],
     accentEmoji: '🏙️',
     neededItems: [ITEM_TYPES.BIBLE],
-    happyMessage: '¡Un momento de paz espiritual! ¡Al fin hallé sentido!',
-    unhappyMessage: '¡Ya tengo dinero, no me mojes el traje italiano!',
+    happyMessage: '¡Paz espiritual en medio del estrés!',
+    unhappyMessage: '¡Ya tengo dinero, no me mojes el traje!',
     weightScore: 120
   },
   [BIOME_TYPES.FAVELA]: {
     id: BIOME_TYPES.FAVELA,
-    name: 'Comunidad Popular',
+    name: 'Barrio / Los Bordos',
     groundColor: '#78716c',
     secondaryColor: '#a8a29e',
     skyGradient: ['#0284c7', '#bae6fd'],
     accentEmoji: '🏘️',
     neededItems: [ITEM_TYPES.FOOD, ITEM_TYPES.TOY, ITEM_TYPES.WATER],
-    happyMessage: '¡Llegó la ayuda y la fiesta para todos!',
+    happyMessage: '¡Llegó la ayuda y la alegría para todos!',
     unhappyMessage: '¡Oigan, eso no es lo que pedimos!',
-    weightScore: 90
+    weightScore: 100
   },
   [BIOME_TYPES.FIRE_EMERGENCY]: {
     id: BIOME_TYPES.FIRE_EMERGENCY,
@@ -180,9 +218,57 @@ export const BIOMES_CATALOG = {
     secondaryColor: '#38bdf8',
     skyGradient: ['#090d16', '#1e1b4b'],
     accentEmoji: '📐',
-    neededItems: [ITEM_TYPES.TRIANGLE, ITEM_TYPES.SQUARE, ITEM_TYPES.CIRCLE, ITEM_TYPES.STAR],
+    neededItems: [],
     happyMessage: '¡Encaje perfecto!',
     unhappyMessage: '¡Fallo de precisión!',
     weightScore: 150
   }
+};
+
+/**
+ * Niveles y Gateway de Progresión (Híbrido: Puntos Meta + Joy-O-Meter Saludable)
+ */
+export const LEVELS_CONFIG = {
+  [GAME_MODES.CITY]: [
+    {
+      level: 1,
+      id: 'TEGUCIGALPA',
+      title: 'Nivel 1: Tegucigalpa',
+      subtitle: 'El Picacho, Cerro Juana Laínez, Estadio Nacional y Centro Cívico',
+      targetScore: 1200,
+      minJoy: 60,
+      skyTint: null,
+      landmarks: ['PICACHO', 'JUANA_LAINEZ', 'ESTADIO_TGU', 'CENTRO_CIVICO']
+    },
+    {
+      level: 2,
+      id: 'SPS',
+      title: 'Nivel 2: San Pedro Sula',
+      subtitle: 'Cordillera del Merendón, Estadio Olímpico y Los Bordos',
+      targetScore: 2800,
+      minJoy: 65,
+      skyTint: '#0284c7',
+      landmarks: ['MERENDON', 'ESTADIO_OLIMPICO', 'BORDOS', 'FUENTE_LUMINOSA']
+    }
+  ],
+  [GAME_MODES.GEOMETRY]: [
+    {
+      level: 1,
+      id: 'GEO_BASIC',
+      title: 'Nivel 1: Figuras Básicas',
+      subtitle: 'Triángulo, Cuadrado, Círculo y Estrella',
+      targetScore: 1400,
+      minJoy: 60,
+      items: [ITEM_TYPES.TRIANGLE, ITEM_TYPES.SQUARE, ITEM_TYPES.CIRCLE, ITEM_TYPES.STAR]
+    },
+    {
+      level: 2,
+      id: 'GEO_COMPLEX',
+      title: 'Nivel 2: Figuras Complejas',
+      subtitle: 'Hexágono, Rombo, Cruz Táctica y Media Luna',
+      targetScore: 3200,
+      minJoy: 65,
+      items: [ITEM_TYPES.HEXAGON, ITEM_TYPES.DIAMOND, ITEM_TYPES.CROSS, ITEM_TYPES.CRESCENT]
+    }
+  ]
 };

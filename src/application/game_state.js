@@ -1,9 +1,18 @@
-import { BIOMES_CATALOG, BIOME_TYPES, GAME_MODES, ITEM_TYPES, ITEMS_CATALOG } from '../domain/types.js';
+import {
+  BIOMES_CATALOG,
+  BIOME_TYPES,
+  GAME_MODES,
+  ITEM_TYPES,
+  ITEMS_CATALOG,
+  LEVELS_CONFIG
+} from '../domain/types.js';
 import { DropEngine } from './drop_engine.js';
 
 export const GAME_STATUS = {
   START: 'START',
   PLAYING: 'PLAYING',
+  LEVEL_COMPLETE: 'LEVEL_COMPLETE',
+  VICTORY: 'VICTORY',
   GAMEOVER: 'GAMEOVER'
 };
 
@@ -13,11 +22,20 @@ export class GameState {
     this.canvasHeight = canvasHeight;
     this.status = GAME_STATUS.START;
     this.mode = GAME_MODES.CITY;
+    this.levelIndex = 0; // 0 = Nivel 1, 1 = Nivel 2
 
     this.dropEngine = new DropEngine();
 
-    this.carouselItems = this.getItemsForMode(this.mode);
+    this.carouselItems = this.getItemsForCurrentLevel();
     this.selectedItemIndex = 0;
+
+    // Anti-spam cooldown para soltar objetos (en segundos)
+    this.dropCooldown = 0;
+    this.dropCooldownDuration = 0.42;
+
+    // Tiempo transcurrido en el nivel para escalado progresivo de velocidad
+    this.levelTime = 0;
+    this.landmarkCounter = 0;
 
     // Estado del Avión
     this.plane = {
@@ -25,9 +43,8 @@ export class GameState {
       y: 88,
       width: 72,
       height: 32,
-      speed: 180, // px/s
-      minSpeed: 115,
-      maxSpeed: 270,
+      baseSpeed: 115, // Inicia en la velocidad mínima
+      speed: 115,
       tilt: 0,
       hatchOpenTimer: 0
     };
@@ -35,42 +52,61 @@ export class GameState {
     this.smokeTrail = [];
     this.worldDistance = 0;
 
-    // Chunks de biomas
     this.biomeChunks = [];
     this.chunkWidth = 700;
     this.nextChunkX = 0;
 
-    // Personas/Pobladores en el suelo (Modo Ciudad)
     this.citizens = [];
-
-    // Bases de encaje geométrico (Modo Precisión)
     this.geometrySlots = [];
 
     this.initWorld();
   }
 
-  getItemsForMode(mode) {
-    if (mode === GAME_MODES.GEOMETRY) {
-      return [
-        ITEM_TYPES.TRIANGLE,
-        ITEM_TYPES.SQUARE,
-        ITEM_TYPES.CIRCLE,
-        ITEM_TYPES.STAR
-      ];
+  getCurrentLevelConfig() {
+    const list = LEVELS_CONFIG[this.mode] || LEVELS_CONFIG[GAME_MODES.CITY];
+    return list[Math.min(this.levelIndex, list.length - 1)];
+  }
+
+  getItemsForCurrentLevel() {
+    if (this.mode === GAME_MODES.GEOMETRY) {
+      const cfg = this.getCurrentLevelConfig();
+      return cfg.items || [ITEM_TYPES.TRIANGLE, ITEM_TYPES.SQUARE, ITEM_TYPES.CIRCLE, ITEM_TYPES.STAR];
     }
-    return [
-      ITEM_TYPES.WATER,
-      ITEM_TYPES.FOOD,
-      ITEM_TYPES.BIBLE,
-      ITEM_TYPES.TOY
-    ];
+    return [ITEM_TYPES.WATER, ITEM_TYPES.FOOD, ITEM_TYPES.BIBLE, ITEM_TYPES.TOY];
   }
 
   setMode(newMode) {
     this.mode = newMode;
-    this.carouselItems = this.getItemsForMode(newMode);
+    this.levelIndex = 0;
+    this.carouselItems = this.getItemsForCurrentLevel();
     this.selectedItemIndex = 0;
+    this.dropEngine.scorer.reset();
     this.initWorld();
+  }
+
+  startGame(mode = null) {
+    if (mode) {
+      this.mode = mode;
+    }
+    this.levelIndex = 0;
+    this.carouselItems = this.getItemsForCurrentLevel();
+    this.selectedItemIndex = 0;
+    this.dropEngine.scorer.reset();
+    this.initWorld();
+    this.status = GAME_STATUS.PLAYING;
+  }
+
+  advanceToNextLevel() {
+    const levels = LEVELS_CONFIG[this.mode];
+    if (this.levelIndex + 1 < levels.length) {
+      this.levelIndex++;
+      this.carouselItems = this.getItemsForCurrentLevel();
+      this.selectedItemIndex = 0;
+      this.initWorld();
+      this.status = GAME_STATUS.PLAYING;
+    } else {
+      this.status = GAME_STATUS.VICTORY;
+    }
   }
 
   initWorld() {
@@ -78,20 +114,27 @@ export class GameState {
     this.citizens = [];
     this.geometrySlots = [];
     this.dropEngine.activeDrops = [];
+    this.dropEngine.rollingItems = [];
     this.dropEngine.particles = [];
     this.dropEngine.floatingTexts = [];
     this.nextChunkX = 0;
     this.worldDistance = 0;
-    this.dropEngine.scorer.reset();
+    this.levelTime = 0;
+    this.landmarkCounter = 0;
+    this.dropCooldown = 0;
+
+    // Velocidad inicial en el setting más bajo
+    this.plane.baseSpeed = 115 + this.levelIndex * 25;
+    this.plane.speed = this.plane.baseSpeed;
 
     if (this.mode === GAME_MODES.GEOMETRY) {
       this.generateChunk(BIOME_TYPES.GEOMETRY_ZONE);
       this.generateChunk(BIOME_TYPES.GEOMETRY_ZONE);
       this.generateChunk(BIOME_TYPES.GEOMETRY_ZONE);
     } else {
-      this.generateChunk(BIOME_TYPES.DESERT);
       this.generateChunk(BIOME_TYPES.FAVELA);
       this.generateChunk(BIOME_TYPES.RICH_DISTRICT);
+      this.generateChunk(BIOME_TYPES.DESERT);
       this.generateChunk(BIOME_TYPES.FIRE_EMERGENCY);
     }
   }
@@ -111,6 +154,18 @@ export class GameState {
         : cityBiomeKeys[Math.floor(Math.random() * cityBiomeKeys.length)]);
 
     const biome = BIOMES_CATALOG[biomeType];
+    const levelCfg = this.getCurrentLevelConfig();
+
+    let landmark = null;
+    if (this.mode === GAME_MODES.CITY && levelCfg.landmarks && levelCfg.landmarks.length > 0) {
+      const lmType = levelCfg.landmarks[this.landmarkCounter % levelCfg.landmarks.length];
+      this.landmarkCounter++;
+      landmark = {
+        type: lmType,
+        x: this.nextChunkX + this.chunkWidth * 0.45,
+        y: this.canvasHeight - 60
+      };
+    }
 
     const chunk = {
       startX: this.nextChunkX,
@@ -118,6 +173,7 @@ export class GameState {
       chunkWidth: this.chunkWidth,
       biome: biome,
       type: biomeType,
+      landmark,
       buildings: this.generateBuildingsForBiome(biomeType, this.nextChunkX, this.chunkWidth)
     };
 
@@ -136,7 +192,6 @@ export class GameState {
     let currentX = startX + 20;
 
     if (type === BIOME_TYPES.GEOMETRY_ZONE) {
-      // Siluetas tecnológicas de fondo para la fábrica de precisión
       while (currentX < startX + width - 40) {
         const bWidth = 65 + Math.random() * 55;
         const bHeight = 55 + Math.random() * 95;
@@ -154,17 +209,17 @@ export class GameState {
     }
 
     while (currentX < startX + width - 40) {
-      const bWidth = 54 + Math.random() * 48;
+      const bWidth = 52 + Math.random() * 44;
       let bHeight = 40;
 
       if (type === BIOME_TYPES.RICH_DISTRICT) {
-        bHeight = 95 + Math.random() * 115;
+        bHeight = 90 + Math.random() * 105;
       } else if (type === BIOME_TYPES.DESERT) {
-        bHeight = 28 + Math.random() * 30;
+        bHeight = 28 + Math.random() * 28;
       } else if (type === BIOME_TYPES.FAVELA) {
-        bHeight = 45 + Math.random() * 62;
+        bHeight = 42 + Math.random() * 56;
       } else if (type === BIOME_TYPES.FIRE_EMERGENCY) {
-        bHeight = 72 + Math.random() * 78;
+        bHeight = 70 + Math.random() * 72;
       }
 
       buildings.push({
@@ -176,7 +231,7 @@ export class GameState {
         extinguished: false
       });
 
-      currentX += bWidth + 16 + Math.random() * 24;
+      currentX += bWidth + 24 + Math.random() * 26;
     }
 
     return buildings;
@@ -203,12 +258,7 @@ export class GameState {
   }
 
   generateGeometrySlotsForChunk(chunk) {
-    const shapes = [
-      ITEM_TYPES.TRIANGLE,
-      ITEM_TYPES.SQUARE,
-      ITEM_TYPES.CIRCLE,
-      ITEM_TYPES.STAR
-    ];
+    const shapes = this.carouselItems;
     const count = 3;
     const spacing = (chunk.endX - chunk.startX - 160) / count;
 
@@ -254,6 +304,9 @@ export class GameState {
 
   dropSelectedItem() {
     if (this.status !== GAME_STATUS.PLAYING) return null;
+    if (this.dropCooldown > 0) return null; // Bloqueo anti-spam
+
+    this.dropCooldown = this.dropCooldownDuration;
     const itemId = this.carouselItems[this.selectedItemIndex];
     this.plane.hatchOpenTimer = 0.25;
     return this.dropEngine.drop(itemId, this.plane);
@@ -262,22 +315,32 @@ export class GameState {
   update(dt, inputState) {
     if (this.status !== GAME_STATUS.PLAYING) return;
 
+    this.levelTime += dt;
+
+    if (this.dropCooldown > 0) {
+      this.dropCooldown = Math.max(0, this.dropCooldown - dt);
+    }
     if (this.plane.hatchOpenTimer > 0) {
       this.plane.hatchOpenTimer = Math.max(0, this.plane.hatchOpenTimer - dt);
     }
 
-    // Manejar aceleración de avión
+    // Escalado continuo de velocidad: desde el mínimo (115) hasta superar con creces el boost inicial de D (220+)
+    this.plane.baseSpeed = Math.min(360, 115 + this.levelIndex * 25 + this.levelTime * 3.8);
+
+    let speedOffset = 0;
     if (inputState.speedUp) {
-      this.plane.speed = Math.min(this.plane.maxSpeed, this.plane.speed + 130 * dt);
+      speedOffset = 65; // Letra D acelera sobre la velocidad base actual
       this.plane.tilt = 0.06;
     } else if (inputState.slowDown) {
-      this.plane.speed = Math.max(this.plane.minSpeed, this.plane.speed - 130 * dt);
+      speedOffset = -45; // Letra A frena sobre la velocidad base actual
       this.plane.tilt = -0.06;
     } else {
       this.plane.tilt *= 0.9;
     }
 
-    // Avanzar mundo
+    const targetSpeed = Math.max(90, this.plane.baseSpeed + speedOffset);
+    this.plane.speed += (targetSpeed - this.plane.speed) * Math.min(1, dt * 8);
+
     const moveDist = this.plane.speed * dt;
     this.worldDistance += moveDist;
 
@@ -304,17 +367,19 @@ export class GameState {
       }
     }
 
-    // Desplazar chunks hacia la izquierda
+    // Desplazar chunks y landmarks
     for (const chunk of this.biomeChunks) {
       chunk.startX -= moveDist;
       chunk.endX -= moveDist;
+      if (chunk.landmark) {
+        chunk.landmark.x -= moveDist;
+      }
       for (const b of chunk.buildings) {
         b.x -= moveDist;
       }
     }
     this.nextChunkX -= moveDist;
 
-    // Desplazar ciudadanos
     for (const c of this.citizens) {
       c.x -= moveDist;
       if (c.happyTimer > 0) {
@@ -323,7 +388,6 @@ export class GameState {
       }
     }
 
-    // Desplazar bases geométricas
     for (const slot of this.geometrySlots) {
       slot.x -= moveDist;
       if (slot.snapAnim > 0) {
@@ -331,8 +395,7 @@ export class GameState {
       }
     }
 
-    // Eliminar chunks fuera de pantalla y generar nuevos
-    while (this.biomeChunks.length > 0 && this.biomeChunks[0].endX < -100) {
+    while (this.biomeChunks.length > 0 && this.biomeChunks[0].endX < -250) {
       this.biomeChunks.shift();
     }
     this.citizens = this.citizens.filter(c => c.x > -100);
@@ -342,17 +405,29 @@ export class GameState {
       this.generateChunk();
     }
 
-    // Actualizar motor de caída y colisiones
-    this.dropEngine.update(dt, this);
+    this.dropEngine.update(dt, this, moveDist);
 
-    // Condición de derrota si el Joy-o-meter llega a 0
+    // Gateway de Nivel (Híbrido: Puntos Meta + Joy-O-Meter mínimo)
+    const levelCfg = this.getCurrentLevelConfig();
+    if (
+      this.dropEngine.scorer.score >= levelCfg.targetScore &&
+      this.dropEngine.scorer.joy >= levelCfg.minJoy
+    ) {
+      const levels = LEVELS_CONFIG[this.mode];
+      if (this.levelIndex + 1 < levels.length) {
+        this.status = GAME_STATUS.LEVEL_COMPLETE;
+      } else {
+        this.status = GAME_STATUS.VICTORY;
+      }
+      return;
+    }
+
     if (this.dropEngine.scorer.joy <= 0) {
       this.status = GAME_STATUS.GAMEOVER;
     }
   }
 
   restart() {
-    this.initWorld();
-    this.status = GAME_STATUS.PLAYING;
+    this.startGame(this.mode);
   }
 }

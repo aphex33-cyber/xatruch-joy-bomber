@@ -7,6 +7,7 @@ export class DropEngine {
     this.physics = new BallisticsEngine(480);
     this.scorer = new JoyScorer();
     this.activeDrops = [];
+    this.rollingItems = [];
     this.particles = [];
     this.floatingTexts = [];
     this.screenShake = 0;
@@ -28,7 +29,7 @@ export class DropEngine {
     return projectile;
   }
 
-  update(dt, gameState) {
+  update(dt, gameState, worldMoveDist = 0) {
     if (this.screenShake > 0) {
       this.screenShake = Math.max(0, this.screenShake - dt * 25);
     }
@@ -41,7 +42,6 @@ export class DropEngine {
 
       const groundY = gameState.getGroundHeightAtX(p.x);
 
-      // Colisión con el terreno
       if (p.y >= groundY) {
         p.active = false;
 
@@ -57,7 +57,17 @@ export class DropEngine {
       }
     }
 
-    // 2. Actualizar partículas
+    // 2. Actualizar objetos rodando en el suelo
+    for (let i = this.rollingItems.length - 1; i >= 0; i--) {
+      const r = this.rollingItems[i];
+      r.x -= worldMoveDist; // Acompaña el scroll del suelo
+      this.physics.updateRollingItem(r, dt, gameState.getGroundHeightAtX(r.x));
+      if (r.life <= 0) {
+        this.rollingItems.splice(i, 1);
+      }
+    }
+
+    // 3. Actualizar partículas
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const part = this.particles[i];
       part.x += part.vx * dt;
@@ -69,7 +79,7 @@ export class DropEngine {
       }
     }
 
-    // 3. Actualizar textos flotantes
+    // 4. Actualizar textos flotantes
     for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
       const ft = this.floatingTexts[i];
       ft.y += ft.vy * dt;
@@ -79,7 +89,7 @@ export class DropEngine {
       }
     }
 
-    // 4. Decaimiento leve de alegría
+    // 5. Decaimiento leve de alegría
     this.scorer.decayJoy(dt);
   }
 
@@ -87,16 +97,21 @@ export class DropEngine {
     const biome = gameState.getBiomeAtX(p.x);
     const result = this.scorer.evaluateImpact(p.item, biome);
 
-    // Interacción directa con ciudadanos cercanos
+    // Hacer que el paquete ruede un poco al caer (excepto agua que salpica)
+    if (p.item.id !== ITEM_TYPES.WATER) {
+      this.rollingItems.push(
+        this.physics.spawnRollingItem(p.item, p.x, groundY, p.vx)
+      );
+    }
+
     if (result.matched) {
       for (const c of gameState.citizens) {
-        if (Math.abs(c.x - p.x) < 90) {
+        if (Math.abs(c.x - p.x) < 95) {
           c.isHappy = true;
           c.happyTimer = 3.5;
         }
       }
 
-      // Si es agua sobre un edificio en llamas, apagar el fuego
       if (p.item.id === ITEM_TYPES.WATER && biome.id === BIOME_TYPES.FIRE_EMERGENCY) {
         for (const chunk of gameState.biomeChunks) {
           for (const b of chunk.buildings) {
@@ -130,7 +145,6 @@ export class DropEngine {
   }
 
   handleGeometryImpact(p, groundY, gameState) {
-    // Buscar la base geométrica más cercana
     let closestSlot = null;
     let minDist = Infinity;
 
@@ -152,6 +166,11 @@ export class DropEngine {
       if (result.tier === 'PERFECT') {
         this.screenShake = 8;
       }
+    } else {
+      // Si falla, la figura rebota y rueda un poco por el suelo
+      this.rollingItems.push(
+        this.physics.spawnRollingItem(p.item, p.x, groundY, p.vx)
+      );
     }
 
     this.spawnImpactParticles(p.x, groundY, p.item, result.matched, result.tier === 'PERFECT');
@@ -216,7 +235,7 @@ export class DropEngine {
         size: 6 + Math.random() * 6,
         life: 0.9 + Math.random() * 0.4,
         maxLife: 1.3,
-        gravity: -20 // El vapor sube
+        gravity: -20
       });
     }
   }

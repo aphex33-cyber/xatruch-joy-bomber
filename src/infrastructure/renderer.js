@@ -16,8 +16,13 @@ export class CanvasRenderer {
 
   resize() {
     const rect = this.canvas.parentElement.getBoundingClientRect();
+    const isImmersive = document.body.classList.contains('immersive-fullscreen');
     this.canvas.width = Math.min(960, Math.max(320, Math.floor(rect.width || 800)));
-    this.canvas.height = Math.max(420, Math.min(540, Math.floor(window.innerHeight * 0.68 || 480)));
+    if (isImmersive) {
+      this.canvas.height = Math.max(240, Math.min(540, Math.floor(window.innerHeight - 92)));
+    } else {
+      this.canvas.height = Math.max(420, Math.min(540, Math.floor(window.innerHeight * 0.68 || 480)));
+    }
     this.ctx.imageSmoothingEnabled = false;
   }
 

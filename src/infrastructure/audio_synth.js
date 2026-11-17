@@ -7,6 +7,10 @@ export class RetroAudioSynth {
   constructor() {
     this.ctx = null;
     this.muted = false;
+    this.bgm = new Audio('assets/music.mp3');
+    this.bgm.loop = true;
+    this.bgm.volume = 0.42;
+    this.bgmStarted = false;
   }
 
   ensureContext() {
@@ -19,10 +23,24 @@ export class RetroAudioSynth {
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
+    this.startMusic();
+  }
+
+  startMusic() {
+    if (this.muted || this.bgmStarted) return;
+    this.bgm.play().then(() => {
+      this.bgmStarted = true;
+    }).catch(() => {
+      // El navegador aún requiere interacción del usuario
+    });
   }
 
   toggleMute() {
     this.muted = !this.muted;
+    this.bgm.muted = this.muted;
+    if (!this.muted) {
+      this.startMusic();
+    }
     return this.muted;
   }
 

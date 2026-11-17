@@ -24,33 +24,53 @@ window.addEventListener('DOMContentLoaded', () => {
   const gameContainer = document.querySelector('.game-container');
 
   const isMobileDevice = () =>
-    window.innerWidth <= 820 || 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    window.innerWidth <= 920 || 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-  const enterFullscreen = async () => {
-    try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-        return;
-      }
-      if (gameContainer.requestFullscreen) {
-        await gameContainer.requestFullscreen();
-      } else if (gameContainer.webkitRequestFullscreen) {
-        await gameContainer.webkitRequestFullscreen();
-      }
-      if (screen.orientation && screen.orientation.lock) {
-        await screen.orientation.lock('landscape').catch(() => {});
-      }
+  let manualFullscreen = false;
+
+  const syncCanvasSize = () => {
+    setTimeout(() => {
+      renderer.resize();
+      gameState.canvasWidth = canvas.width;
+      gameState.canvasHeight = canvas.height;
+    }, 80);
+  };
+
+  const setImmersiveFullscreen = (enabled) => {
+    if (enabled) {
+      document.body.classList.add('immersive-fullscreen');
       if (mobilePrompt) mobilePrompt.style.display = 'none';
-    } catch {
-      // Ignorar si el navegador bloquea fullscreen
+    } else {
+      document.body.classList.remove('immersive-fullscreen');
+    }
+    syncCanvasSize();
+  };
+
+  const enterFullscreen = () => {
+    const isNowImmersive = document.body.classList.contains('immersive-fullscreen');
+    manualFullscreen = !isNowImmersive;
+    setImmersiveFullscreen(!isNowImmersive);
+  };
+
+  const handleOrientationChange = () => {
+    if (!isMobileDevice()) return;
+    const isLandscape = window.innerWidth > window.innerHeight;
+    if (isLandscape) {
+      // Al girar el celular a horizontal, activar pantalla completa automática sin banner del navegador
+      setImmersiveFullscreen(true);
+    } else if (!manualFullscreen) {
+      setImmersiveFullscreen(false);
     }
   };
 
-  if (mobilePrompt && isMobileDevice() && !document.fullscreenElement) {
+  if (mobilePrompt && isMobileDevice() && window.innerHeight > window.innerWidth) {
     mobilePrompt.style.display = 'flex';
   }
   if (btnAcceptFullscreen) {
-    btnAcceptFullscreen.addEventListener('click', () => enterFullscreen());
+    btnAcceptFullscreen.addEventListener('click', () => {
+      manualFullscreen = true;
+      setImmersiveFullscreen(true);
+    });
   }
   if (btnDismissFullscreen && mobilePrompt) {
     btnDismissFullscreen.addEventListener('click', () => {
@@ -60,13 +80,18 @@ window.addEventListener('DOMContentLoaded', () => {
   if (btnFullscreen) {
     btnFullscreen.addEventListener('click', () => enterFullscreen());
   }
-  document.addEventListener('fullscreenchange', () => {
-    setTimeout(() => {
-      renderer.resize();
-      gameState.canvasWidth = canvas.width;
-      gameState.canvasHeight = canvas.height;
-    }, 100);
+
+  window.addEventListener('orientationchange', handleOrientationChange);
+  if (screen.orientation && screen.orientation.addEventListener) {
+    screen.orientation.addEventListener('change', handleOrientationChange);
+  }
+  window.addEventListener('resize', () => {
+    handleOrientationChange();
+    syncCanvasSize();
   });
+
+  // Ejecutar al inicio por si ya abrió el celular en horizontal
+  handleOrientationChange();
 
   const syncModeButtonLabel = () => {
     if (btnMode) {
@@ -225,12 +250,6 @@ window.addEventListener('DOMContentLoaded', () => {
       syncModeButtonLabel();
     });
   }
-
-  window.addEventListener('resize', () => {
-    renderer.resize();
-    gameState.canvasWidth = canvas.width;
-    gameState.canvasHeight = canvas.height;
-  });
 
   function loop(currentTime) {
     const dt = Math.min((currentTime - lastTime) / 1000, 0.1);

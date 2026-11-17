@@ -8,9 +8,10 @@ export class BallisticsEngine {
   }
 
   /**
-   * Actualiza la posición y velocidad de un proyectil según dt (segundos)
+   * Actualiza la posición y velocidad de un proyectil según dt (segundos) y viento cruzado
    */
-  updateProjectile(proj, dt) {
+  updateProjectile(proj, dt, windX = 0) {
+    proj.vx += windX * dt;
     proj.vx *= Math.pow(proj.drag || 0.98, dt * 60);
     proj.vy += this.gravity * (proj.mass || 1.0) * dt;
 
@@ -88,7 +89,7 @@ export class BallisticsEngine {
   /**
    * Simula la trayectoria en pasos discretos para predecir dónde caerá el objeto
    */
-  predictTrajectory(itemConfig, startX, startY, planeVx, groundY, steps = 40) {
+  predictTrajectory(itemConfig, startX, startY, planeVx, groundY, steps = 40, windX = 0) {
     const sim = {
       x: startX,
       y: startY + 12,
@@ -102,6 +103,7 @@ export class BallisticsEngine {
     const dt = 0.035;
 
     for (let i = 0; i < steps; i++) {
+      sim.vx += windX * dt;
       sim.vx *= Math.pow(sim.drag, dt * 60);
       sim.vy += this.gravity * sim.mass * dt;
       sim.x += sim.vx * dt;

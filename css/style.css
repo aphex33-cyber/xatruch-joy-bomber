@@ -255,6 +255,12 @@ canvas#gameCanvas {
   min-height: 0;
 }
 
+@media (hover: none) and (pointer: coarse), (max-width: 640px) {
+  .touch-controls {
+    display: none !important;
+  }
+}
+
 .game-container:fullscreen .touch-controls,
 .game-container:-webkit-full-screen .touch-controls {
   flex-direction: row;

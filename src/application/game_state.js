@@ -52,6 +52,13 @@ export class GameState {
     this.levelTime = 0;
     this.landmarkCounter = 0;
 
+    // Viento cruzado y nubes de turbulencia (se activan tras 2 minutos = 120s)
+    this.windX = 0;
+    this.windTarget = 0;
+    this.windTimer = 0;
+    this.turbulenceClouds = [];
+    this.turbulenceSpawnTimer = 4;
+
     // Estado del Avión
     this.plane = {
       x: 110,
@@ -203,6 +210,11 @@ export class GameState {
     this.levelTime = 0;
     this.landmarkCounter = 0;
     this.dropCooldown = 0;
+    this.windX = 0;
+    this.windTarget = 0;
+    this.windTimer = 0;
+    this.turbulenceClouds = [];
+    this.turbulenceSpawnTimer = 3;
 
     const effMode = this.getEffectiveMode();
 
@@ -516,6 +528,40 @@ export class GameState {
 
     const moveDist = this.plane.speed * dt;
     this.worldDistance += moveDist;
+
+    // Tras 2 minutos (120s) de partida: viento cruzado aleatorio y nubes de turbulencia
+    if (this.levelTime >= 120) {
+      this.windTimer -= dt;
+      if (this.windTimer <= 0) {
+        const dir = Math.random() < 0.5 ? -1 : 1;
+        this.windTarget = dir * (45 + Math.random() * 45);
+        this.windTimer = 10 + Math.random() * 6;
+      }
+      this.windX += (this.windTarget - this.windX) * Math.min(1, dt * 1.5);
+
+      this.turbulenceSpawnTimer -= dt;
+      if (this.turbulenceSpawnTimer <= 0) {
+        this.turbulenceSpawnTimer = 5 + Math.random() * 4;
+        const minY = this.plane.y + 45;
+        const maxY = Math.max(minY + 20, this.canvasHeight - 150);
+        this.turbulenceClouds.push({
+          x: this.canvasWidth + 60,
+          y: minY + Math.random() * (maxY - minY),
+          width: 86,
+          height: 32,
+          gust: (Math.random() < 0.5 ? -1 : 1) * (55 + Math.random() * 35)
+        });
+      }
+    }
+
+    // Mover nubes de turbulencia
+    for (let i = this.turbulenceClouds.length - 1; i >= 0; i--) {
+      const tc = this.turbulenceClouds[i];
+      tc.x -= (moveDist * 0.7 + 45 * dt);
+      if (tc.x + tc.width < -60) {
+        this.turbulenceClouds.splice(i, 1);
+      }
+    }
 
     // Partículas de humo del motor
     if (Math.random() < 0.65) {

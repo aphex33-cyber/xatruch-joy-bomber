@@ -65,6 +65,7 @@ export class CanvasRenderer {
       // Suelo, Landmarks de Honduras y Edificios
       this.renderWorldChunks(ctx, gameState);
 
+      this.renderTurbulenceClouds(ctx, gameState.turbulenceClouds);
       this.renderSpeedLines(ctx, w, h, gameState.plane.speed);
 
       if (gameState.status === GAME_STATUS.PLAYING) {
@@ -341,6 +342,35 @@ export class CanvasRenderer {
       ctx.fillRect(cx + 8, c.y - 8, c.w - 16, 8);
       ctx.fillRect(cx + 16, c.y - 14, c.w - 32, 6);
     });
+  }
+
+  renderTurbulenceClouds(ctx, clouds) {
+    if (!clouds || clouds.length === 0) return;
+    for (const tc of clouds) {
+      ctx.save();
+      // Nube oscura de tormenta 16-bit con contorno
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(tc.x - 2, tc.y + 8, tc.width + 4, tc.height - 8);
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(tc.x, tc.y + 10, tc.width, tc.height - 12);
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(tc.x + 12, tc.y + 2, tc.width - 24, 10);
+      ctx.fillRect(tc.x + 24, tc.y - 4, tc.width - 48, 8);
+
+      // Rayo amarillo animado / ráfaga
+      if (Math.sin(this.elapsedTime * 16 + tc.x) > 0.2) {
+        ctx.fillStyle = '#facc15';
+        ctx.fillRect(tc.x + tc.width / 2 - 2, tc.y + tc.height - 2, 5, 8);
+        ctx.fillRect(tc.x + tc.width / 2 + 1, tc.y + tc.height + 5, 4, 7);
+      }
+
+      // Flecha indicando dirección de la ráfaga
+      ctx.font = 'bold 10px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#38bdf8';
+      ctx.textAlign = 'center';
+      ctx.fillText(tc.gust > 0 ? '💨 ➔' : '⬅ 💨', tc.x + tc.width / 2, tc.y + 22);
+      ctx.restore();
+    }
   }
 
   renderWorldChunks(ctx, gameState) {
@@ -752,7 +782,9 @@ export class CanvasRenderer {
       gameState.plane.x + gameState.plane.width * 0.5,
       gameState.plane.y + gameState.plane.height,
       gameState.plane.speed,
-      groundY
+      groundY,
+      40,
+      gameState.windX || 0
     );
 
     let isTargetLocked = false;
@@ -1087,6 +1119,17 @@ export class CanvasRenderer {
       ctx.font = '10px "JetBrains Mono", monospace';
       ctx.fillStyle = spd > 280 ? '#ef4444' : spd > 195 ? '#facc15' : '#94a3b8';
       ctx.fillText(`VELOCIDAD: ${spd} KT  |  META: ${scorer.score}/${levelCfg.targetScore} (JOY ≥ ${levelCfg.minJoy}%)`, w / 2, 35);
+    }
+
+    if (Math.abs(gameState.windX || 0) > 5) {
+      const windDir = gameState.windX > 0 ? '➔' : '⬅';
+      const windStr = Math.round(Math.abs(gameState.windX));
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(w / 2 - 74, hudHeight, 148, 18);
+      ctx.font = 'bold 10px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#38bdf8';
+      ctx.textAlign = 'center';
+      ctx.fillText(`💨 VIENTO ${windDir} ${windStr} KT`, w / 2, hudHeight + 13);
     }
 
     this.renderCarouselHUD(ctx, gameState, w);

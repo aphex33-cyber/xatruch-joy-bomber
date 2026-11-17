@@ -35,10 +35,25 @@ export class DropEngine {
     }
 
     // 1. Actualizar proyectiles
+    const windX = gameState.windX || 0;
     for (let i = this.activeDrops.length - 1; i >= 0; i--) {
       const p = this.activeDrops[i];
       p.timeInAir += dt;
-      this.physics.updateProjectile(p, dt);
+      this.physics.updateProjectile(p, dt, windX);
+
+      // Turbulencia extra si el paquete atraviesa una nube de tormenta
+      if (gameState.turbulenceClouds) {
+        for (const tc of gameState.turbulenceClouds) {
+          if (
+            p.x >= tc.x &&
+            p.x <= tc.x + tc.width &&
+            p.y >= tc.y &&
+            p.y <= tc.y + tc.height
+          ) {
+            p.vx += tc.gust * dt * 3.0;
+          }
+        }
+      }
 
       const groundY = gameState.getGroundHeightAtX(p.x);
 

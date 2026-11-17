@@ -90,12 +90,14 @@ export class HighwayEngine {
   }
 
   spawnObstaclePattern(speed) {
-    const types = ['BUSH', 'SIGN', 'FENCE', 'CAR', 'POLE', 'MACAW', 'DEER', 'GANGSTER'];
+    const types = ['BUSH', 'SIGN', 'FENCE', 'CAR', 'POLE', 'MACAW', 'DEER', 'GANGSTER', 'TRAFFIC_JAM'];
     const type = types[Math.floor(Math.random() * types.length)];
 
     let width = 30;
     let height = 34;
     let y = this.groundY - height;
+    let cars = null;
+    let honkText = '';
 
     if (type === 'BUSH') {
       width = 36;
@@ -120,7 +122,7 @@ export class HighwayEngine {
     } else if (type === 'MACAW') {
       width = 34;
       height = 24;
-      y = this.groundY - (74 + Math.random() * 24); // Vuela a media altura
+      y = this.groundY - (74 + Math.random() * 24);
     } else if (type === 'DEER') {
       width = 44;
       height = 36;
@@ -129,6 +131,30 @@ export class HighwayEngine {
       width = 26;
       height = 40;
       y = this.groundY - height;
+    } else if (type === 'TRAFFIC_JAM') {
+      const carCount = 3 + Math.floor(Math.random() * 3); // 3 a 5 carros pegados
+      width = carCount * 62 - 6;
+      height = 32;
+      y = this.groundY - height;
+
+      const palette = ['#ef4444', '#facc15', '#f8fafc', '#38bdf8', '#22c55e', '#94a3b8'];
+      const quotes = [
+        '¡PIIIP! 📢',
+        'Anillo Periférico 🐢',
+        'Bulevar Suyapa 2h',
+        '¡Llegamos mañana!',
+        '¡Mueve pues! 😤',
+        'Tráfico TGU 🚗🚗'
+      ];
+      honkText = quotes[Math.floor(Math.random() * quotes.length)];
+      cars = [];
+      for (let i = 0; i < carCount; i++) {
+        cars.push({
+          offsetX: i * 62,
+          color: palette[Math.floor(Math.random() * palette.length)],
+          isBus: i === 1 && Math.random() < 0.55 // Rapidito / busito ocasional
+        });
+      }
     }
 
     const spawnX = this.canvasWidth + 60;
@@ -138,17 +164,34 @@ export class HighwayEngine {
       width,
       height,
       type,
+      cars,
+      honkText,
       wingPhase: Math.random() * Math.PI * 2,
       passed: false
     });
 
-    // En modo rescate siempre aparece suministro para poder salvarse; en normal 75%
-    if (this.isRescueMode || Math.random() < 0.75) {
+    // Suministros coleccionables
+    if (type === 'TRAFFIC_JAM') {
+      // Fila de suministros sobre los techos de la cola de carros
+      const itemCount = 2;
+      for (let i = 0; i < itemCount; i++) {
+        const itemId = HIGHWAY_COLLECTIBLES[Math.floor(Math.random() * HIGHWAY_COLLECTIBLES.length)];
+        this.stars.push({
+          x: spawnX + 50 + i * 95,
+          y: this.groundY - height - 36,
+          radius: 13,
+          item: ITEMS_CATALOG[itemId],
+          collected: false
+        });
+      }
+      // Dar un poco más de respiro antes del siguiente obstáculo
+      this.spawnTimer += 0.55;
+    } else if (this.isRescueMode || Math.random() < 0.75) {
       const itemId = HIGHWAY_COLLECTIBLES[Math.floor(Math.random() * HIGHWAY_COLLECTIBLES.length)];
       const itemCfg = ITEMS_CATALOG[itemId];
       const itemY =
         type === 'MACAW'
-          ? this.groundY - 26 // Por debajo de la guacamaya
+          ? this.groundY - 26
           : this.groundY - height - (type === 'POLE' ? 42 : 48);
       this.stars.push({
         x: spawnX + width / 2,
@@ -186,6 +229,7 @@ export class HighwayEngine {
       this.runner.invulnTimer = Math.max(0, this.runner.invulnTimer - dt);
     }
 
+    const prevY = this.runner.y;
     this.runner.vy += this.gravity * dt;
     this.runner.y += this.runner.vy * dt;
 
@@ -204,14 +248,7 @@ export class HighwayEngine {
       this.spawnTimer = minGap + Math.random() * 0.7;
     }
 
-    // 3. Mover obstáculos y detectar colisiones
-    const rBox = {
-      x: this.runner.x - this.runner.width * 0.35,
-      y: this.runner.y - this.runner.height + 4,
-      w: this.runner.width * 0.7,
-      h: this.runner.height - 6
-    };
-
+    // 3. Mover obstáculos y detectar colisiones / plataformas de tráfico
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
       const obs = this.obstacles[i];
       const obsSpeed = obs.type === 'MACAW' ? speed * 1.18 : speed;
@@ -221,17 +258,38 @@ export class HighwayEngine {
       // Puntos al superar obstáculo
       if (!obs.passed && obs.x + obs.width < this.runner.x) {
         obs.passed = true;
-        scorer.score += 50;
+        scorer.score += obs.type === 'TRAFFIC_JAM' ? 120 : 50;
         scorer.successfulDrops++;
       }
 
-      // Colisión AABB
+      const rLeft = this.runner.x - this.runner.width * 0.35;
+      const rRight = this.runner.x + this.runner.width * 0.35;
+      const rTop = this.runner.y - this.runner.height + 4;
+      const rBottom = this.runner.y;
+
+      // En TRAFFIC_JAM el General puede aterrizar y correr sobre los techos de los carros
+      if (
+        obs.type === 'TRAFFIC_JAM' &&
+        rRight > obs.x + 4 &&
+        rLeft < obs.x + obs.width - 4 &&
+        prevY <= obs.y + 12 &&
+        rBottom >= obs.y &&
+        this.runner.vy >= 0
+      ) {
+        this.runner.y = obs.y;
+        this.runner.vy = 0;
+        this.runner.grounded = true;
+        this.runner.jumpsLeft = this.runner.maxJumps;
+        continue;
+      }
+
+      // Colisión AABB (si choca de frente o con otros obstáculos)
       if (
         this.runner.invulnTimer <= 0 &&
-        rBox.x < obs.x + obs.width - 4 &&
-        rBox.x + rBox.w > obs.x + 4 &&
-        rBox.y < obs.y + obs.height - 2 &&
-        rBox.y + rBox.h > obs.y + 4
+        rLeft < obs.x + obs.width - 4 &&
+        rRight > obs.x + 4 &&
+        rTop < obs.y + obs.height - 2 &&
+        rBottom - 2 > obs.y + 4
       ) {
         this.lives--;
         this.runner.invulnTimer = 1.4;
@@ -253,7 +311,7 @@ export class HighwayEngine {
         });
       }
 
-      if (obs.x + obs.width < -60) {
+      if (obs.x + obs.width < -80) {
         this.obstacles.splice(i, 1);
       }
     }

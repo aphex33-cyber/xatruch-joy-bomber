@@ -272,6 +272,8 @@ export class CanvasRenderer {
         this.sprites.drawDeer(ctx, obs);
       } else if (obs.type === 'GANGSTER') {
         this.sprites.drawGangster(ctx, obs);
+      } else if (obs.type === 'TRAFFIC_JAM') {
+        this.sprites.drawTrafficJam(ctx, obs, this.elapsedTime);
       }
     }
 

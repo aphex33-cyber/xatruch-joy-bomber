@@ -323,6 +323,75 @@ export class SpriteLibrary {
   }
 
   /**
+   * Cola interminable de carros del tráfico de Tegucigalpa con humor
+   */
+  drawTrafficJam(ctx, obs, time) {
+    if (!obs.cars) return;
+    ctx.save();
+    for (const car of obs.cars) {
+      const cx = obs.x + car.offsetX;
+      const cy = obs.y;
+      const vibrate = Math.sin(time * 22 + car.offsetX) * 0.6;
+
+      // Carrocería 16-bit con contorno oscuro
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(cx - 1, cy + 9 + vibrate, 58, 18);
+      ctx.fillStyle = car.color;
+      ctx.fillRect(cx + 1, cy + 11 + vibrate, 54, 14);
+
+      if (car.isBus) {
+        // Rapidito / busito típico
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(cx + 2, cy - 2 + vibrate, 52, 13);
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(cx + 4, cy + vibrate, 48, 10);
+        ctx.fillStyle = '#38bdf8';
+        for (let wx = 7; wx < 46; wx += 11) {
+          ctx.fillRect(cx + wx, cy + 2 + vibrate, 8, 6);
+        }
+      } else {
+        // Techo de sedán / taxi
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(cx + 10, cy + vibrate, 34, 11);
+        ctx.fillStyle = car.color;
+        ctx.fillRect(cx + 12, cy + 2 + vibrate, 30, 8);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(cx + 15, cy + 3 + vibrate, 11, 6);
+        ctx.fillRect(cx + 29, cy + 3 + vibrate, 10, 6);
+      }
+
+      // Luces traseras de freno encendidas (rojo brillante)
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(cx + 52, cy + 14 + vibrate, 4, 5);
+      // Llantas
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(cx + 12, cy + 27, 5, 0, Math.PI * 2);
+      ctx.arc(cx + 44, cy + 27, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Globo humorístico de bocina / queja sobre la cola de carros
+    if (obs.honkText) {
+      const bx = obs.x + obs.width * 0.45;
+      const by = obs.y - 24 + Math.sin(time * 6) * 2;
+      ctx.font = 'bold 10px "JetBrains Mono", monospace';
+      const tw = ctx.measureText(obs.honkText).width + 14;
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.roundRect(bx - tw / 2, by, tw, 17, 5);
+      ctx.fill();
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = '#0f172a';
+      ctx.textAlign = 'center';
+      ctx.fillText(obs.honkText, bx, by + 12);
+    }
+    ctx.restore();
+  }
+
+  /**
    * Dibuja al General Florencio Xatruch corriendo y saltando en el Modo Carretera
    */
   drawXatruchRunner(ctx, runner, groundY, time) {

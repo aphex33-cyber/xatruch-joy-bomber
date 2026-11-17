@@ -365,7 +365,7 @@ export const LEVELS_CONFIG = {
       id: 'SPS',
       title: 'Nivel 2: San Pedro Sula',
       subtitle: 'Cordillera del Merendón, Estadio Olímpico y Los Bordos',
-      targetScore: 14000,
+      targetScore: 9500,
       minJoy: 70,
       skyTint: '#0284c7',
       landmarks: ['MERENDON', 'ESTADIO_OLIMPICO', 'BORDOS', 'FUENTE_LUMINOSA']
@@ -386,7 +386,7 @@ export const LEVELS_CONFIG = {
       id: 'GEO_COMPLEX',
       title: 'Nivel 2: Figuras Complejas',
       subtitle: 'Hexágono, Rombo, Cruz Táctica y Media Luna',
-      targetScore: 9500,
+      targetScore: 7000,
       minJoy: 60,
       items: [ITEM_TYPES.HEXAGON, ITEM_TYPES.DIAMOND, ITEM_TYPES.CROSS, ITEM_TYPES.CRESCENT]
     }

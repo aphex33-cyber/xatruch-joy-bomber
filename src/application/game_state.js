@@ -59,8 +59,9 @@ export class GameState {
     this.dropCooldown = 0;
     this.dropCooldownDuration = 0.42;
 
-    // Tiempo transcurrido en el nivel para escalado progresivo de velocidad
+    // Tiempo transcurrido y puntaje base del nivel actual
     this.levelTime = 0;
+    this.levelStartScore = 0;
     this.landmarkCounter = 0;
 
     // Viento cruzado y nubes de turbulencia (se activan tras 2 minutos = 120s)
@@ -93,6 +94,10 @@ export class GameState {
     this.geometrySlots = [];
 
     this.initWorld();
+  }
+
+  getLevelScore() {
+    return Math.max(0, this.dropEngine.scorer.score - this.levelStartScore);
   }
 
   getDifficultyConfig() {
@@ -179,6 +184,7 @@ export class GameState {
   setMode(newMode) {
     this.mode = newMode;
     this.levelIndex = 0;
+    this.levelStartScore = 0;
     this.isRescueActive = false;
     this.rescueUsedThisRun = false;
     this.highScore = HighScoreStore.get(this.mode);
@@ -194,6 +200,7 @@ export class GameState {
       this.mode = mode;
     }
     this.levelIndex = 0;
+    this.levelStartScore = 0;
     this.isRescueActive = false;
     this.rescueUsedThisRun = false;
     this.highScore = HighScoreStore.get(this.mode);
@@ -228,6 +235,9 @@ export class GameState {
 
     if (this.levelIndex + 1 < totalLevels) {
       this.levelIndex++;
+      // Reiniciar meta de puntos para este nuevo capítulo conservando el score acumulado
+      this.levelStartScore = this.dropEngine.scorer.score;
+      this.dropEngine.scorer.joy = Math.max(60, this.dropEngine.scorer.joy);
       this.carouselItems = this.getItemsForCurrentLevel();
       this.selectedItemIndex = 0;
       this.initWorld();
@@ -721,10 +731,10 @@ export class GameState {
 
     this.dropEngine.update(dt, this, moveDist);
 
-    // Gateway de Nivel (Híbrido: Puntos Meta + Joy-O-Meter mínimo)
+    // Gateway de Nivel (Híbrido: Puntos Meta DEL NIVEL + Joy-O-Meter mínimo)
     const levelCfg = this.getCurrentLevelConfig();
     if (
-      this.dropEngine.scorer.score >= levelCfg.targetScore &&
+      this.getLevelScore() >= levelCfg.targetScore &&
       this.dropEngine.scorer.joy >= levelCfg.minJoy
     ) {
       const stars = calculateStars(this.dropEngine.scorer.joy, this.dropEngine.scorer.maxCombo);

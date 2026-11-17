@@ -113,12 +113,7 @@ export class CanvasRenderer {
     if (gameState.status === GAME_STATUS.START) {
       this.renderStartScreen(ctx, w, h, gameState);
     } else if (gameState.status === GAME_STATUS.PLANE_STUNT) {
-      ctx.save();
-      ctx.font = 'bold 20px "JetBrains Mono", monospace';
-      ctx.fillStyle = '#facc15';
-      ctx.textAlign = 'center';
-      ctx.fillText('✈️ ¡PIRUETA DE VICTORIA! ✨', w / 2, h / 2 - 20);
-      ctx.restore();
+      // Pirueta silenciosa sin texto sobre la pantalla
     } else if (gameState.status === GAME_STATUS.RESCUE_PROMPT) {
       this.renderRescuePromptScreen(ctx, w, h, gameState);
     } else if (gameState.status === GAME_STATUS.LEVEL_COMPLETE) {
@@ -1113,12 +1108,13 @@ export class CanvasRenderer {
 
     // NIVEL & ZONA ACTUAL
     const spd = Math.round(gameState.plane.speed);
+    const levelScore = gameState.getLevelScore ? gameState.getLevelScore() : scorer.score;
     ctx.textAlign = 'center';
     if (isMobile) {
       ctx.font = 'bold 10px "JetBrains Mono", monospace';
       ctx.fillStyle = '#38bdf8';
       ctx.fillText(
-        `${currentBiome.accentEmoji} ${currentBiome.name.toUpperCase()} • META: ${scorer.score}/${levelCfg.targetScore}`,
+        `${currentBiome.accentEmoji} ${currentBiome.name.toUpperCase()} • META: ${levelScore}/${levelCfg.targetScore}`,
         w / 2,
         49
       );
@@ -1129,7 +1125,7 @@ export class CanvasRenderer {
 
       ctx.font = '10px "JetBrains Mono", monospace';
       ctx.fillStyle = spd > 280 ? '#ef4444' : spd > 195 ? '#facc15' : '#94a3b8';
-      ctx.fillText(`VELOCIDAD: ${spd} KT  |  META: ${scorer.score}/${levelCfg.targetScore} (JOY ≥ ${levelCfg.minJoy}%)`, w / 2, 35);
+      ctx.fillText(`VELOCIDAD: ${spd} KT  |  META: ${levelScore}/${levelCfg.targetScore} (JOY ≥ ${levelCfg.minJoy}%)`, w / 2, 35);
     }
 
     if (Math.abs(gameState.windX || 0) > 5) {

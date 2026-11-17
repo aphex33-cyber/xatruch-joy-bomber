@@ -36,6 +36,9 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 80);
   };
 
+  const isNativeFullscreen = () =>
+    Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+
   const setImmersiveFullscreen = (enabled) => {
     if (enabled) {
       document.body.classList.add('immersive-fullscreen');
@@ -46,19 +49,54 @@ window.addEventListener('DOMContentLoaded', () => {
     syncCanvasSize();
   };
 
+  const requestRealFullscreen = async () => {
+    try {
+      if (!isNativeFullscreen()) {
+        if (gameContainer.requestFullscreen) {
+          await gameContainer.requestFullscreen({ navigationUI: 'hide' });
+        } else if (gameContainer.webkitRequestFullscreen) {
+          await gameContainer.webkitRequestFullscreen();
+        }
+      }
+      if (screen.orientation && screen.orientation.lock) {
+        await screen.orientation.lock('landscape').catch(() => {});
+      }
+    } catch {
+      // Fallback CSS si el navegador (ej. iOS Safari) restringe Fullscreen API en divs
+    }
+    setImmersiveFullscreen(true);
+  };
+
+  const exitRealFullscreen = async () => {
+    try {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        await document.exitFullscreen();
+      } else if (document.webkitFullscreenElement && document.webkitExitFullscreen) {
+        await document.webkitExitFullscreen();
+      }
+    } catch {
+      // Ignorar
+    }
+    setImmersiveFullscreen(false);
+  };
+
   const enterFullscreen = () => {
-    const isNowImmersive = document.body.classList.contains('immersive-fullscreen');
-    manualFullscreen = !isNowImmersive;
-    setImmersiveFullscreen(!isNowImmersive);
+    const currentlyFull = isNativeFullscreen() || document.body.classList.contains('immersive-fullscreen');
+    if (currentlyFull) {
+      manualFullscreen = false;
+      exitRealFullscreen();
+    } else {
+      manualFullscreen = true;
+      requestRealFullscreen();
+    }
   };
 
   const handleOrientationChange = () => {
     if (!isMobileDevice()) return;
     const isLandscape = window.innerWidth > window.innerHeight;
     if (isLandscape) {
-      // Al girar el celular a horizontal, activar pantalla completa automática sin banner del navegador
       setImmersiveFullscreen(true);
-    } else if (!manualFullscreen) {
+    } else if (!manualFullscreen && !isNativeFullscreen()) {
       setImmersiveFullscreen(false);
     }
   };
@@ -69,7 +107,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (btnAcceptFullscreen) {
     btnAcceptFullscreen.addEventListener('click', () => {
       manualFullscreen = true;
-      setImmersiveFullscreen(true);
+      requestRealFullscreen();
     });
   }
   if (btnDismissFullscreen && mobilePrompt) {
@@ -80,6 +118,14 @@ window.addEventListener('DOMContentLoaded', () => {
   if (btnFullscreen) {
     btnFullscreen.addEventListener('click', () => enterFullscreen());
   }
+
+  document.addEventListener('fullscreenchange', () => {
+    if (!isNativeFullscreen() && !manualFullscreen && window.innerHeight > window.innerWidth) {
+      document.body.classList.remove('immersive-fullscreen');
+    }
+    syncCanvasSize();
+  });
+  document.addEventListener('webkitfullscreenchange', syncCanvasSize);
 
   window.addEventListener('orientationchange', handleOrientationChange);
   if (screen.orientation && screen.orientation.addEventListener) {
@@ -111,6 +157,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const triggerAction = () => {
     audio.ensureContext();
+    if (isMobileDevice() && window.innerWidth > window.innerHeight && !isNativeFullscreen()) {
+      requestRealFullscreen();
+    }
     if (gameState.status === GAME_STATUS.START) {
       gameState.startGame(gameState.mode);
       syncModeButtonLabel();
@@ -140,6 +189,9 @@ window.addEventListener('DOMContentLoaded', () => {
       ) {
         audio.ensureContext();
         audio.playCarouselClick();
+        if (isMobileDevice() && window.innerWidth > window.innerHeight && !isNativeFullscreen()) {
+          requestRealFullscreen();
+        }
         gameState.startGame(btn.mode);
         syncModeButtonLabel();
         return true;

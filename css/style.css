@@ -227,17 +227,21 @@ canvas#gameCanvas {
   cursor: pointer;
 }
 
-.game-container:fullscreen {
+.game-container:fullscreen,
+.game-container:-webkit-full-screen {
   max-width: 100vw;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
   border-radius: 0;
+  border: none;
   justify-content: space-between;
 }
 
-.game-container:fullscreen canvas#gameCanvas {
+.game-container:fullscreen canvas#gameCanvas,
+.game-container:-webkit-full-screen canvas#gameCanvas {
   flex: 1;
-  max-height: calc(100vh - 110px);
+  min-height: 0;
+  max-height: calc(100dvh - 88px);
 }
 
 body.immersive-fullscreen {

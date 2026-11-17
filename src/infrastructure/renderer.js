@@ -16,9 +16,13 @@ export class CanvasRenderer {
 
   resize() {
     const rect = this.canvas.parentElement.getBoundingClientRect();
-    const isImmersive = document.body.classList.contains('immersive-fullscreen');
-    this.canvas.width = Math.min(960, Math.max(320, Math.floor(rect.width || 800)));
-    if (isImmersive) {
+    const isFullscreen = Boolean(
+      document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.body.classList.contains('immersive-fullscreen')
+    );
+    this.canvas.width = Math.min(960, Math.max(320, Math.floor(rect.width || window.innerWidth || 800)));
+    if (isFullscreen) {
       const headerEl = document.querySelector('.game-header');
       const ctrlEl = document.querySelector('.touch-controls');
       const usedH = (headerEl ? headerEl.offsetHeight : 38) + (ctrlEl ? ctrlEl.offsetHeight : 52);

@@ -112,6 +112,13 @@ export class CanvasRenderer {
     // Pantallas de Estado
     if (gameState.status === GAME_STATUS.START) {
       this.renderStartScreen(ctx, w, h, gameState);
+    } else if (gameState.status === GAME_STATUS.PLANE_STUNT) {
+      ctx.save();
+      ctx.font = 'bold 20px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#facc15';
+      ctx.textAlign = 'center';
+      ctx.fillText('✈️ ¡PIRUETA DE VICTORIA! ✨', w / 2, h / 2 - 20);
+      ctx.restore();
     } else if (gameState.status === GAME_STATUS.RESCUE_PROMPT) {
       this.renderRescuePromptScreen(ctx, w, h, gameState);
     } else if (gameState.status === GAME_STATUS.LEVEL_COMPLETE) {
@@ -1236,6 +1243,7 @@ export class CanvasRenderer {
 
     const isMobile = w < 680;
     const planeCfg = gameState.getSelectedPlaneConfig();
+    const diffCfg = gameState.getDifficultyConfig();
 
     ctx.fillStyle = '#38bdf8';
     ctx.font = `bold ${isMobile ? 18 : 25}px "JetBrains Mono", monospace`;
@@ -1245,7 +1253,7 @@ export class CanvasRenderer {
     ctx.fillStyle = '#facc15';
     ctx.font = `bold ${isMobile ? 10 : 12}px "JetBrains Mono", monospace`;
     ctx.fillText(
-      `⭐ ${gameState.totalStars}/12 ESTRELLAS  •  AVIÓN: ${planeCfg.name.toUpperCase()}`,
+      `⭐ ${gameState.totalStars}/12  •  DIF: ${diffCfg.label.toUpperCase()}  •  ${planeCfg.name.toUpperCase()}`,
       w / 2,
       isMobile ? 50 : h / 2 - 122
     );
@@ -1433,9 +1441,23 @@ export class CanvasRenderer {
     ctx.font = 'bold 14px "JetBrains Mono", monospace';
     ctx.fillText(`MÁXIMO COMBO: x${gameState.dropEngine.scorer.maxCombo}`, w / 2, h / 2 + 74);
 
+    const diffCfg = gameState.getDifficultyConfig();
+    const nextDiffLabel =
+      diffCfg.nextDifficulty === 'NORMAL'
+        ? 'NORMAL'
+        : diffCfg.nextDifficulty === 'HARD'
+          ? 'DIFÍCIL'
+          : null;
+
     ctx.fillStyle = '#22c55e';
     ctx.font = 'bold 14px "JetBrains Mono", monospace';
-    ctx.fillText('🔄 PRESIONA [ESPACIO] O TOCA PARA VOLVER AL MENÚ', w / 2, h / 2 + 115);
+    ctx.fillText(
+      nextDiffLabel
+        ? `▶ PRESIONA [ESPACIO] O TOCA PARA SUBIR A DIFICULTAD ${nextDiffLabel}`
+        : '🔄 PRESIONA [ESPACIO] O TOCA PARA VOLVER AL MENÚ',
+      w / 2,
+      h / 2 + 115
+    );
   }
 
   renderGameOverScreen(ctx, w, h, gameState) {

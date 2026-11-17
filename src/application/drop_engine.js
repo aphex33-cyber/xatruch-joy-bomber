@@ -105,9 +105,10 @@ export class DropEngine {
       }
     }
 
-    // 5. Decaimiento leve de alegría (más suave en modo Geometría)
+    // 5. Decaimiento leve de alegría según dificultad
     const effectiveMode = gameState.getEffectiveMode ? gameState.getEffectiveMode() : gameState.mode;
-    const decayRate = effectiveMode === GAME_MODES.GEOMETRY ? 0.55 : 1.1;
+    const diffCfg = gameState.getDifficultyConfig ? gameState.getDifficultyConfig() : { joyDecay: 1.1 };
+    const decayRate = effectiveMode === GAME_MODES.GEOMETRY ? diffCfg.joyDecay * 0.55 : diffCfg.joyDecay;
     this.scorer.decayJoy(dt, decayRate);
   }
 
@@ -140,11 +141,13 @@ export class DropEngine {
     }
 
     const hitTarget = Boolean(nearestCitizen) || hitFireBuilding;
+    const diffCfg = gameState.getDifficultyConfig ? gameState.getDifficultyConfig() : { joyPenalty: 12 };
     const result = this.scorer.evaluateImpact(
       p.item,
       biome,
       hitTarget,
-      hitFireBuilding ? null : nearestCitizen
+      hitFireBuilding ? null : nearestCitizen,
+      diffCfg.joyPenalty
     );
 
     // Hacer que el paquete ruede un poco al caer (excepto agua que salpica)
@@ -206,7 +209,9 @@ export class DropEngine {
       }
     }
 
-    const result = this.scorer.evaluateGeometryImpact(p.item, closestSlot, minDist);
+    const diffCfg = gameState.getDifficultyConfig ? gameState.getDifficultyConfig() : { joyPenalty: 8 };
+    const geoPenalty = Math.max(4, Math.round(diffCfg.joyPenalty * 0.7));
+    const result = this.scorer.evaluateGeometryImpact(p.item, closestSlot, minDist, geoPenalty);
 
     if (result.matched && closestSlot) {
       closestSlot.filled = true;

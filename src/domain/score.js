@@ -116,7 +116,7 @@ export class JoyScorer {
     this.perfectDrops = 0;
   }
 
-  evaluateImpact(item, biome, hitTarget = true, targetCitizen = null) {
+  evaluateImpact(item, biome, hitTarget = true, targetCitizen = null, joyPenalty = 12) {
     this.totalDrops++;
     // Si hay un ciudadano objetivo cercano, debe coincidir con su petición única
     const isMatched = targetCitizen
@@ -164,7 +164,7 @@ export class JoyScorer {
     } else {
       const oldCombo = this.combo;
       this.combo = 0;
-      const joyLoss = 12;
+      const joyLoss = joyPenalty;
       this.joy = Math.max(0, this.joy - joyLoss);
 
       return {
@@ -184,13 +184,13 @@ export class JoyScorer {
    * Evaluación de Precisión Geométrica (Nivel 2)
    * Tolerancia balanceada para jugabilidad justa y divertida
    */
-  evaluateGeometryImpact(item, slot, distance) {
+  evaluateGeometryImpact(item, slot, distance, joyPenalty = 8) {
     this.totalDrops++;
 
     if (!slot || slot.filled || slot.shapeType !== item.id || distance > 46) {
       const oldCombo = this.combo;
       this.combo = 0;
-      const joyLoss = 8;
+      const joyLoss = joyPenalty;
       this.joy = Math.max(0, this.joy - joyLoss);
 
       const reason = !slot || distance > 46

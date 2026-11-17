@@ -10,6 +10,54 @@ export const GAME_MODES = {
   HIGHWAY: 'HIGHWAY'
 };
 
+export const DIFFICULTY_LEVELS = {
+  EASY: {
+    id: 'EASY',
+    label: 'Fácil',
+    baseSpeed: 76,
+    speedRamp: 1.0,
+    maxSpeed: 210,
+    highwayBase: 145,
+    highwayRamp: 1.4,
+    highwayMax: 270,
+    joyDecay: 0.45,
+    joyPenalty: 6,
+    windStartTime: 180, // 3 minutos
+    scoreMultiplier: 0.6,
+    nextDifficulty: 'NORMAL'
+  },
+  NORMAL: {
+    id: 'NORMAL',
+    label: 'Normal',
+    baseSpeed: 92,
+    speedRamp: 1.6,
+    maxSpeed: 310,
+    highwayBase: 170,
+    highwayRamp: 2.2,
+    highwayMax: 370,
+    joyDecay: 0.75,
+    joyPenalty: 9,
+    windStartTime: 150, // 2.5 minutos
+    scoreMultiplier: 0.85,
+    nextDifficulty: 'HARD'
+  },
+  HARD: {
+    id: 'HARD',
+    label: 'Difícil',
+    baseSpeed: 105,
+    speedRamp: 2.4,
+    maxSpeed: 430,
+    highwayBase: 195,
+    highwayRamp: 3.2,
+    highwayMax: 480,
+    joyDecay: 1.1,
+    joyPenalty: 12,
+    windStartTime: 120, // 2 minutos
+    scoreMultiplier: 1.0,
+    nextDifficulty: null
+  }
+};
+
 export const STORY_STAGES = [
   {
     stageIndex: 0,

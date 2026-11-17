@@ -18,6 +18,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnDrop = document.getElementById('btnDrop');
   const btnMute = document.getElementById('btnMute');
   const btnMode = document.getElementById('btnMode');
+  const btnDifficulty = document.getElementById('btnDifficulty');
   const btnHangar = document.getElementById('btnHangar');
   const btnFullscreen = document.getElementById('btnFullscreen');
   const gameContainer = document.querySelector('.game-container');
@@ -106,6 +107,10 @@ window.addEventListener('DOMContentLoaded', () => {
       const planeCfg = gameState.getSelectedPlaneConfig();
       btnHangar.textContent = `✈️ ${planeCfg.name.split(' ')[0]}`;
     }
+    if (btnDifficulty) {
+      const diffCfg = gameState.getDifficultyConfig();
+      btnDifficulty.textContent = `🎚️ ${diffCfg.label}`;
+    }
   };
   syncModeButtonLabel();
 
@@ -126,7 +131,9 @@ window.addEventListener('DOMContentLoaded', () => {
       gameState.advanceToNextLevel();
       syncModeButtonLabel();
     } else if (gameState.status === GAME_STATUS.VICTORY) {
-      gameState.status = GAME_STATUS.START;
+      if (!gameState.advanceToNextDifficulty()) {
+        gameState.status = GAME_STATUS.START;
+      }
       syncModeButtonLabel();
     } else if (gameState.status === GAME_STATUS.GAMEOVER) {
       gameState.restart();
@@ -221,10 +228,23 @@ window.addEventListener('DOMContentLoaded', () => {
     return result;
   };
 
-  // Audio del Modo Salto en Carretera
+  // Audio de pirueta y Modo Salto en Carretera
+  gameState.onStuntStart = () => audio.playLevelStuntFanfare();
   gameState.highwayEngine.onJump = (isDouble) => audio.playJump(isDouble);
   gameState.highwayEngine.onStarCollected = () => audio.playStar();
   gameState.highwayEngine.onObstacleHit = () => audio.playFail();
+
+  if (btnDifficulty) {
+    btnDifficulty.addEventListener('click', () => {
+      audio.ensureContext();
+      audio.playCarouselClick();
+      gameState.cycleDifficulty();
+      if (gameState.status === GAME_STATUS.PLAYING) {
+        gameState.restart();
+      }
+      syncModeButtonLabel();
+    });
+  }
 
   if (btnPrev) {
     btnPrev.addEventListener('click', () => {

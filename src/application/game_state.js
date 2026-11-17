@@ -1,6 +1,7 @@
 import {
   BIOMES_CATALOG,
   BIOME_TYPES,
+  DIFFICULTY_LEVELS,
   GAME_MODES,
   ITEM_TYPES,
   ITEMS_CATALOG,
@@ -15,6 +16,7 @@ import { HighwayEngine } from './highway_engine.js';
 export const GAME_STATUS = {
   START: 'START',
   PLAYING: 'PLAYING',
+  PLANE_STUNT: 'PLANE_STUNT',
   RESCUE_PROMPT: 'RESCUE_PROMPT',
   LEVEL_COMPLETE: 'LEVEL_COMPLETE',
   VICTORY: 'VICTORY',
@@ -27,7 +29,8 @@ export class GameState {
     this.canvasHeight = canvasHeight;
     this.status = GAME_STATUS.START;
     this.mode = GAME_MODES.STORY;
-    this.levelIndex = 0; // 0 = Nivel 1, 1 = Nivel 2 (en Story: 0..3)
+    this.difficulty = 'EASY'; // Inicia en Fácil por defecto
+    this.levelIndex = 0;
 
     this.dropEngine = new DropEngine();
     this.highwayEngine = new HighwayEngine(canvasWidth, canvasHeight);
@@ -40,6 +43,14 @@ export class GameState {
 
     this.isRescueActive = false;
     this.rescueUsedThisRun = false;
+
+    // Estado de pirueta acrobática entre niveles
+    this.stuntTimer = 0;
+    this.stuntDuration = 2.0;
+    this.stuntOriginX = 110;
+    this.stuntOriginY = 84;
+    this.stuntPendingStatus = GAME_STATUS.LEVEL_COMPLETE;
+    this.onStuntStart = null;
 
     this.carouselItems = this.getItemsForCurrentLevel();
     this.selectedItemIndex = 0;
@@ -84,6 +95,33 @@ export class GameState {
     this.initWorld();
   }
 
+  getDifficultyConfig() {
+    return DIFFICULTY_LEVELS[this.difficulty] || DIFFICULTY_LEVELS.EASY;
+  }
+
+  setDifficulty(diffId) {
+    if (DIFFICULTY_LEVELS[diffId]) {
+      this.difficulty = diffId;
+    }
+  }
+
+  cycleDifficulty() {
+    const order = ['EASY', 'NORMAL', 'HARD'];
+    const next = order[(order.indexOf(this.difficulty) + 1) % order.length];
+    this.difficulty = next;
+    return this.getDifficultyConfig();
+  }
+
+  advanceToNextDifficulty() {
+    const diffCfg = this.getDifficultyConfig();
+    if (diffCfg.nextDifficulty) {
+      this.difficulty = diffCfg.nextDifficulty;
+      this.startGame(this.mode);
+      return true;
+    }
+    return false;
+  }
+
   getEffectiveMode() {
     if (this.isRescueActive) return GAME_MODES.HIGHWAY;
     if (this.mode === GAME_MODES.STORY) {
@@ -94,6 +132,7 @@ export class GameState {
   }
 
   getCurrentLevelConfig() {
+    const diffCfg = this.getDifficultyConfig();
     if (this.isRescueActive) {
       return LEVELS_CONFIG[GAME_MODES.HIGHWAY][0];
     }
@@ -102,12 +141,17 @@ export class GameState {
       const baseCfg = LEVELS_CONFIG[st.subMode][st.levelIndex];
       return {
         ...baseCfg,
+        targetScore: Math.round(baseCfg.targetScore * diffCfg.scoreMultiplier),
         title: st.title,
         subtitle: st.subtitle
       };
     }
     const list = LEVELS_CONFIG[this.mode] || LEVELS_CONFIG[GAME_MODES.CITY];
-    return list[Math.min(this.levelIndex, list.length - 1)];
+    const baseCfg = list[Math.min(this.levelIndex, list.length - 1)];
+    return {
+      ...baseCfg,
+      targetScore: Math.round(baseCfg.targetScore * diffCfg.scoreMultiplier)
+    };
   }
 
   getItemsForCurrentLevel() {
@@ -217,17 +261,21 @@ export class GameState {
     this.turbulenceSpawnTimer = 3;
 
     const effMode = this.getEffectiveMode();
+    const diffCfg = this.getDifficultyConfig();
+
+    this.plane.x = 110;
+    this.plane.tilt = 0;
 
     if (effMode === GAME_MODES.HIGHWAY) {
-      this.plane.baseSpeed = 195;
-      this.plane.speed = 195;
+      this.plane.baseSpeed = diffCfg.highwayBase;
+      this.plane.speed = diffCfg.highwayBase;
       this.dropEngine.scorer.joy = 100;
       this.highwayEngine.reset(this.canvasWidth, this.canvasHeight, this.isRescueActive);
       return;
     }
 
-    // Velocidad inicial en el setting más bajo
-    this.plane.baseSpeed = 105 + this.levelIndex * 18;
+    // Velocidad inicial según dificultad (Fácil 76, Normal 92, Difícil 105)
+    this.plane.baseSpeed = diffCfg.baseSpeed + this.levelIndex * 10;
     this.plane.speed = this.plane.baseSpeed;
     const hudHeight = this.canvasWidth < 620 ? 58 : 46;
     this.plane.y = Math.max(hudHeight + 26, Math.min(96, Math.round(this.canvasHeight * 0.22)));
@@ -460,14 +508,58 @@ export class GameState {
   }
 
   update(dt, inputState) {
+    if (this.status === GAME_STATUS.PLANE_STUNT) {
+      this.stuntTimer += dt;
+      const progress = Math.min(1, this.stuntTimer / this.stuntDuration);
+      const theta = progress * Math.PI * 2;
+      // Pirueta acrobática de 360 grados en el cielo
+      this.plane.x = this.stuntOriginX + Math.sin(theta) * 58;
+      this.plane.y = this.stuntOriginY - (1 - Math.cos(theta)) * 34;
+      this.plane.tilt = -theta;
+
+      // Estela festiva de humo dorado/celeste durante la pirueta
+      if (Math.random() < 0.85) {
+        this.dropEngine.particles.push({
+          x: this.plane.x + 20,
+          y: this.plane.y + 14,
+          vx: (Math.random() - 0.5) * 40,
+          vy: 20 + Math.random() * 40,
+          color: Math.random() < 0.5 ? '#facc15' : '#38bdf8',
+          size: 4 + Math.random() * 3,
+          life: 0.7,
+          maxLife: 0.7,
+          gravity: 40
+        });
+      }
+      for (let i = this.dropEngine.particles.length - 1; i >= 0; i--) {
+        const part = this.dropEngine.particles[i];
+        part.x += part.vx * dt;
+        part.y += part.vy * dt;
+        part.life -= dt;
+        if (part.life <= 0) this.dropEngine.particles.splice(i, 1);
+      }
+
+      if (this.stuntTimer >= this.stuntDuration) {
+        this.plane.x = 110;
+        this.plane.y = this.stuntOriginY;
+        this.plane.tilt = 0;
+        this.status = this.stuntPendingStatus;
+      }
+      return;
+    }
+
     if (this.status !== GAME_STATUS.PLAYING) return;
 
     this.levelTime += dt;
+    const diffCfg = this.getDifficultyConfig();
 
     if (this.getEffectiveMode() === GAME_MODES.HIGHWAY) {
-      this.plane.baseSpeed = Math.min(480, 195 + this.levelTime * 3.2);
+      this.plane.baseSpeed = Math.min(
+        diffCfg.highwayMax,
+        diffCfg.highwayBase + this.levelTime * diffCfg.highwayRamp
+      );
       const speedOffset = inputState.speedUp ? 55 : inputState.slowDown ? -45 : 0;
-      const targetSpeed = Math.max(140, this.plane.baseSpeed + speedOffset);
+      const targetSpeed = Math.max(115, this.plane.baseSpeed + speedOffset);
       this.plane.speed += (targetSpeed - this.plane.speed) * Math.min(1, dt * 8);
 
       const moveDist = this.plane.speed * dt;
@@ -509,28 +601,31 @@ export class GameState {
       this.plane.hatchOpenTimer = Math.max(0, this.plane.hatchOpenTimer - dt);
     }
 
-    // Escalado continuo de velocidad a lo largo de varios minutos (105 KT -> 430 KT)
-    this.plane.baseSpeed = Math.min(430, 105 + this.levelIndex * 25 + this.levelTime * 2.4);
+    // Escalado continuo de velocidad según dificultad
+    this.plane.baseSpeed = Math.min(
+      diffCfg.maxSpeed,
+      diffCfg.baseSpeed + this.levelIndex * 10 + this.levelTime * diffCfg.speedRamp
+    );
 
     let speedOffset = 0;
     if (inputState.speedUp) {
-      speedOffset = 65;
+      speedOffset = 55;
       this.plane.tilt = 0.06;
     } else if (inputState.slowDown) {
-      speedOffset = -45;
+      speedOffset = -35;
       this.plane.tilt = -0.06;
     } else {
       this.plane.tilt *= 0.9;
     }
 
-    const targetSpeed = Math.max(85, this.plane.baseSpeed + speedOffset);
+    const targetSpeed = Math.max(65, this.plane.baseSpeed + speedOffset);
     this.plane.speed += (targetSpeed - this.plane.speed) * Math.min(1, dt * 8);
 
     const moveDist = this.plane.speed * dt;
     this.worldDistance += moveDist;
 
-    // Tras 2 minutos (120s) de partida: viento cruzado aleatorio y nubes de turbulencia
-    if (this.levelTime >= 120) {
+    // Viento cruzado aleatorio y nubes de turbulencia tras el tiempo de inicio según dificultad
+    if (this.levelTime >= diffCfg.windStartTime) {
       this.windTimer -= dt;
       if (this.windTimer <= 0) {
         const dir = Math.random() < 0.5 ? -1 : 1;
@@ -643,14 +738,21 @@ export class GameState {
           : (LEVELS_CONFIG[this.mode] || []).length;
 
       if (this.levelIndex + 1 < totalLevels) {
-        this.status = GAME_STATUS.LEVEL_COMPLETE;
+        this.stuntPendingStatus = GAME_STATUS.LEVEL_COMPLETE;
       } else {
         if (this.mode === GAME_MODES.STORY) {
           ProgressStore.markStoryCompleted();
         }
         this.finalizeRunHighScore();
-        this.status = GAME_STATUS.VICTORY;
+        this.stuntPendingStatus = GAME_STATUS.VICTORY;
       }
+
+      // Iniciar pirueta acrobática de 360° antes de pasar al siguiente nivel
+      this.stuntTimer = 0;
+      this.stuntOriginX = this.plane.x;
+      this.stuntOriginY = this.plane.y;
+      this.status = GAME_STATUS.PLANE_STUNT;
+      if (this.onStuntStart) this.onStuntStart();
       return;
     }
 

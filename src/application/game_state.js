@@ -151,6 +151,7 @@ export class GameState {
     // Velocidad inicial en el setting más bajo
     this.plane.baseSpeed = 105 + this.levelIndex * 25;
     this.plane.speed = this.plane.baseSpeed;
+    this.plane.y = Math.max(56, Math.min(88, Math.round(this.canvasHeight * 0.16)));
 
     if (this.mode === GAME_MODES.GEOMETRY) {
       this.generateChunk(BIOME_TYPES.GEOMETRY_ZONE);
@@ -161,6 +162,40 @@ export class GameState {
       this.generateChunk(BIOME_TYPES.RICH_DISTRICT);
       this.generateChunk(BIOME_TYPES.FAVELA);
       this.generateChunk(BIOME_TYPES.FIRE_EMERGENCY);
+    }
+  }
+
+  onResize(newWidth, newHeight) {
+    this.canvasWidth = newWidth;
+    this.canvasHeight = newHeight;
+
+    // Mantener el avión arriba en el cielo, justo debajo del HUD
+    const isMobileHud = newWidth < 620;
+    const minSkyY = isMobileHud ? 62 : 54;
+    this.plane.y = Math.max(minSkyY, Math.min(88, Math.round(newHeight * 0.16)));
+
+    const newGroundY = newHeight - 60;
+    for (const chunk of this.biomeChunks) {
+      if (chunk.landmark) {
+        chunk.landmark.y = newGroundY;
+      }
+      for (const b of chunk.buildings) {
+        b.y = newGroundY - b.height;
+      }
+    }
+    for (const c of this.citizens) {
+      c.y = newGroundY;
+    }
+    for (const slot of this.geometrySlots) {
+      slot.y = newGroundY;
+    }
+    if (this.highwayEngine) {
+      this.highwayEngine.canvasWidth = newWidth;
+      this.highwayEngine.canvasHeight = newHeight;
+      this.highwayEngine.groundY = newHeight - 64;
+      if (this.highwayEngine.runner.grounded) {
+        this.highwayEngine.runner.y = this.highwayEngine.groundY;
+      }
     }
   }
 

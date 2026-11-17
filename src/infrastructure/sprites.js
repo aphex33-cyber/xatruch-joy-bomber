@@ -24,64 +24,66 @@ function compilePixelMatrix(matrix, palette, scale = 2) {
   return canvas;
 }
 
-// Matriz 28x14 para el avión arcade (escala 2.5x -> ~70x35 px)
+// Matriz 28x14 con contorno oscuro 16-bit (estilo Moustache Protocol) para el avión arcade
 const PLANE_MATRIX = [
-  '.....RRRR................... ',
-  '....RRRRRR..................',
-  '....RRRRRR.....GGGG.........',
-  '...RRRRRRRR...GGGGGG........',
-  '..WWWWWWWWWWWWWWWWWWWWWW....',
-  '.WWWWWWWWWWWWWWCCCWWWWWWW...',
-  'RRRRRRRRRRRRRRCCCCCRRRRRR...',
-  'WWWWWWWWWWWWWWWWWWWWWWWWWW..',
-  '.SSSSSSSSSSSSSSSSSSSSSSSS...',
-  '.....BBBBBBBBBBBBBB.........',
-  '........WW......WW..........',
-  '.......WWWW....WWWW.........',
-  '........BB......BB..........'
+  '.....OOOO................... ',
+  '....ORRRRO..................',
+  '....ORRRRRO....OOOOO........',
+  '...ORRRRRRRO..OGGGGGO.......',
+  '..OOWWWWWWWWWWWWWWWWWWWOO...',
+  '.OWWWWWWWWWWWWWWCCCWWWWWWOO.',
+  'ORRRRRRRRRRRRRRRCCCCCRRRRRRO',
+  'OWWWWWWWWWWWWWWWWWWWWWWWWWWO',
+  '.OSSSSSSSSSSSSSSSSSSSSSSSSO.',
+  '..OOOBBBBBBBBBBBBBBOOOOOOO..',
+  '........OWO.....OWO.........',
+  '.......OWWWO...OWWWO........',
+  '........OBO.....OBO.........'
 ].map(r => r.trimEnd().padEnd(28, '.'));
 
 const PLANE_PALETTE = {
+  O: '#0f172a', // Contorno oscuro 16-bit
   R: '#ef4444', // Rojo arcade
   W: '#f8fafc', // Blanco brillante
-  S: '#cbd5e1', // Sombra fuselaje
+  S: '#94a3b8', // Sombra fuselaje
   C: '#38bdf8', // Cabina vidrio
-  G: '#fbbf24', // Ala superior dorada/amarilla
-  B: '#334155'  // Tren de aterrizaje / llantas
+  G: '#fbbf24', // Ala superior dorada
+  B: '#334155'  // Tren de aterrizaje
 };
 
-// Matriz 14x16 basada en el retrato histórico del General Florencio Xatruch
-// Sin sombrero: cabello ondulado entrecano, frente amplia, cejas marcadas, bigote y barba blanca espesa, casaca oscura
+// Matriz 16x16 con contorno oscuro 16-bit basada en el retrato del General Florencio Xatruch
 const XATRUCH_MATRIX = [
-  '....HHHHHH....',
-  '...HHGGGGHH...',
-  '..HHSSSSSSHH..',
-  '..HSSSSSSSSSS.',
-  '..SSBSSSSBSS..',
-  '..SSWESSWESS..',
-  '..SSSSNNSSSS..',
-  '..SSMMMMMMSS..',
-  '..SMMMMMMMMS..',
-  '...MMMMMMMM...',
-  '...DDDDDDDD...',
-  '....DDDDDD....',
-  '..UUCCTTTTUU..',
-  '.UUUUCCTUUUUU.',
-  '.UUUUUUUUUUUU.'
+  '....OOOOOOOO....',
+  '...OHHHHHHHHO...',
+  '..OHHGGGGGGHHO..',
+  '.OHHSSSSSSSSHO..',
+  '.OHSSSSSSSSSSHO.',
+  '.OSSBSSSSSSBSSO.',
+  '.OSSWEOSSOEWSSO.',
+  '.OSSSSSNNSSSSSO.',
+  '.OSSMMMMMMMMSSO.',
+  '.OSMMMMMMMMMMSO.',
+  '..OMMMMMMMMMMO..',
+  '..ODDDDDDDDDDO..',
+  '...ODDDDDDDDO...',
+  '.OOUUCCTTTTCUUO.',
+  'OUUUUUCCTUUUUUUO',
+  'OUUUUUUUUUUUUUUO'
 ];
 
 const XATRUCH_PALETTE = {
+  O: '#0f172a', // Contorno oscuro 16-bit
   H: '#4b5563', // Cabello entrecano oscuro
   G: '#9ca3af', // Canas onduladas
   S: '#f3c69f', // Piel rostro
-  B: '#6b7280', // Cejas entrecanas marcadas
+  B: '#374151', // Cejas marcadas
   W: '#ffffff', // Esclerótica
-  E: '#1f2937', // Pupila expresiva
+  E: '#0f172a', // Pupila expresiva
   N: '#d99b66', // Nariz definida
-  M: '#f3f4f6', // Bigote y barba blanca/plateada espesa
-  D: '#d1d5db', // Sombra de barba
+  M: '#f8fafc', // Bigote y barba blanca espesa
+  D: '#cbd5e1', // Sombra de barba
   C: '#ffffff', // Cuello blanco de camisa
-  T: '#4b5563', // Corbatín oscuro
+  T: '#374151', // Corbatín oscuro
   U: '#1f2937'  // Casaca oscura siglo XIX
 };
 

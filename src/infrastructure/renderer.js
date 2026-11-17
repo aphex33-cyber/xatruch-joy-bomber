@@ -19,7 +19,10 @@ export class CanvasRenderer {
     const isImmersive = document.body.classList.contains('immersive-fullscreen');
     this.canvas.width = Math.min(960, Math.max(320, Math.floor(rect.width || 800)));
     if (isImmersive) {
-      this.canvas.height = Math.max(240, Math.min(540, Math.floor(window.innerHeight - 92)));
+      const headerEl = document.querySelector('.game-header');
+      const ctrlEl = document.querySelector('.touch-controls');
+      const usedH = (headerEl ? headerEl.offsetHeight : 38) + (ctrlEl ? ctrlEl.offsetHeight : 52);
+      this.canvas.height = Math.max(240, Math.min(540, Math.floor(window.innerHeight - usedH - 4)));
     } else {
       this.canvas.height = Math.max(420, Math.min(540, Math.floor(window.innerHeight * 0.68 || 480)));
     }
@@ -271,6 +274,14 @@ export class CanvasRenderer {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
 
+    // Bandas de dithering 16-bit retro en el horizonte
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+    for (let x = 0; x < w; x += 8) {
+      ctx.fillRect(x, h - 108, 4, 4);
+      ctx.fillRect(x + 4, h - 104, 4, 4);
+      ctx.fillRect(x, h - 96, 4, 4);
+    }
+
     if (mode === GAME_MODES.GEOMETRY) {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
       for (let i = 0; i < 24; i++) {
@@ -328,9 +339,12 @@ export class CanvasRenderer {
       ctx.fillStyle = chunk.biome.groundColor;
       ctx.fillRect(chunk.startX, groundY, chunk.chunkWidth + 2, 60);
 
-      // Franja superior de relieve
+      // Franja superior de relieve + borde negro 16-bit estilo arcade
       ctx.fillStyle = chunk.biome.secondaryColor;
-      ctx.fillRect(chunk.startX, groundY, chunk.chunkWidth + 2, 7);
+      ctx.fillRect(chunk.startX, groundY, chunk.chunkWidth + 2, 8);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(chunk.startX, groundY, chunk.chunkWidth + 2, 2);
+      ctx.fillRect(chunk.startX, groundY + 8, chunk.chunkWidth + 2, 2);
 
       if (chunk.type === BIOME_TYPES.GEOMETRY_ZONE) {
         ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
@@ -588,8 +602,11 @@ export class CanvasRenderer {
   }
 
   renderBuilding(ctx, b) {
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
     ctx.fillRect(b.x + 5, b.y + 5, b.width, b.height);
+    // Borde oscuro 16-bit estilo Moustache Protocol
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
 
     if (b.type === BIOME_TYPES.GEOMETRY_ZONE) {
       ctx.fillStyle = '#1e1b4b';
@@ -946,8 +963,10 @@ export class CanvasRenderer {
     const levelCfg = gameState.getCurrentLevelConfig();
 
     const hudHeight = isMobile ? 58 : 46;
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
     ctx.fillRect(0, 0, w, hudHeight);
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillRect(0, hudHeight - 2, w, 2);
 
     if (gameState.mode === GAME_MODES.HIGHWAY) {
       const hw = gameState.highwayEngine;

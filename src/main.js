@@ -11,6 +11,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const audio = new RetroAudioSynth();
   const gameState = new GameState(canvas.width, canvas.height);
+  gameState.onResize(canvas.width, canvas.height);
 
   const btnPrev = document.getElementById('btnPrev');
   const btnNext = document.getElementById('btnNext');
@@ -31,8 +32,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const syncCanvasSize = () => {
     setTimeout(() => {
       renderer.resize();
-      gameState.canvasWidth = canvas.width;
-      gameState.canvasHeight = canvas.height;
+      gameState.onResize(canvas.width, canvas.height);
     }, 80);
   };
 

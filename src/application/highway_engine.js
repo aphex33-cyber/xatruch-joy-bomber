@@ -1,7 +1,17 @@
+import { ITEM_TYPES, ITEMS_CATALOG } from '../domain/types.js';
+
 /**
  * APLICACIÓN: Motor del Modo "Salto en Carretera" (Vista de Ventana)
- * El corredor imaginario salta postes, carros, cercas y arbustos en el horizonte.
+ * El General Xatruch corre por Tegucigalpa saltando obstáculos y recolectando suministros.
  */
+
+const HIGHWAY_COLLECTIBLES = [
+  ITEM_TYPES.WATER,
+  ITEM_TYPES.FOOD,
+  ITEM_TYPES.MONEY,
+  ITEM_TYPES.BIBLE,
+  ITEM_TYPES.TOY
+];
 
 export class HighwayEngine {
   constructor(canvasWidth, canvasHeight) {
@@ -27,6 +37,8 @@ export class HighwayEngine {
     this.maxLives = 3;
     this.obstacles = [];
     this.stars = [];
+    this.landmarks = [];
+    this.landmarkSeq = 0;
     this.spawnTimer = 1.2;
     this.poleOffset = 0;
 
@@ -51,6 +63,12 @@ export class HighwayEngine {
     this.lives = 3;
     this.obstacles = [];
     this.stars = [];
+    this.landmarks = [
+      { type: 'JUANA_LAINEZ', x: 260 },
+      { type: 'CENTRO_CIVICO', x: 680 },
+      { type: 'CATEDRAL', x: 1120 }
+    ];
+    this.landmarkSeq = 3;
     this.spawnTimer = 1.0;
   }
 
@@ -100,12 +118,15 @@ export class HighwayEngine {
       passed: false
     });
 
-    // 65% de probabilidad de generar estrella de alegría sobre el obstáculo
-    if (Math.random() < 0.65) {
+    // 75% de probabilidad de generar un suministro del modo ciudad sobre el obstáculo
+    if (Math.random() < 0.75) {
+      const itemId = HIGHWAY_COLLECTIBLES[Math.floor(Math.random() * HIGHWAY_COLLECTIBLES.length)];
+      const itemCfg = ITEMS_CATALOG[itemId];
       this.stars.push({
         x: spawnX + width / 2,
         y: this.groundY - height - (type === 'POLE' ? 42 : 48),
-        radius: 11,
+        radius: 13,
+        item: itemCfg,
         collected: false
       });
     }
@@ -114,6 +135,22 @@ export class HighwayEngine {
   update(dt, speed, scorer, dropEngine) {
     this.groundY = this.canvasHeight - 64;
     this.poleOffset = (this.poleOffset + speed * dt) % 240;
+
+    // Desplazar paisajes de Tegucigalpa en el horizonte (parallax)
+    const tguLandmarks = ['JUANA_LAINEZ', 'CENTRO_CIVICO', 'ESTADIO_TGU', 'CATEDRAL', 'PICACHO'];
+    for (let i = this.landmarks.length - 1; i >= 0; i--) {
+      this.landmarks[i].x -= speed * 0.45 * dt;
+      if (this.landmarks[i].x < -220) {
+        this.landmarks.splice(i, 1);
+      }
+    }
+    const lastLm = this.landmarks[this.landmarks.length - 1];
+    if (!lastLm || lastLm.x < this.canvasWidth + 240) {
+      const nextX = (lastLm ? lastLm.x : 0) + 440;
+      const lmType = tguLandmarks[this.landmarkSeq % tguLandmarks.length];
+      this.landmarkSeq++;
+      this.landmarks.push({ type: lmType, x: nextX });
+    }
 
     // 1. Física del corredor
     this.runner.runPhase += dt * (speed * 0.06);
@@ -208,13 +245,15 @@ export class HighwayEngine {
 
           if (this.onStarCollected) this.onStarCollected();
 
-          dropEngine.spawnImpactParticles(st.x, st.y, { color: '#facc15' }, true, false);
+          const colColor = st.item ? st.item.color : '#facc15';
+          const colIcon = st.item ? st.item.icon : '⭐';
+          dropEngine.spawnImpactParticles(st.x, st.y, { color: colColor }, true, false);
           dropEngine.floatingTexts.push({
             x: st.x,
             y: st.y - 16,
-            text: `⭐ +${pts}`,
-            subtext: scorer.combo > 1 ? `Combo x${scorer.combo}` : '',
-            color: '#facc15',
+            text: `${colIcon} +${pts}`,
+            subtext: scorer.combo > 1 ? `Combo x${scorer.combo}` : (st.item ? st.item.shortName : ''),
+            color: colColor,
             life: 1.2,
             maxLife: 1.2,
             vy: -40

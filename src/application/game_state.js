@@ -78,7 +78,7 @@ export class GameState {
       const cfg = this.getCurrentLevelConfig();
       return cfg.items || [ITEM_TYPES.TRIANGLE, ITEM_TYPES.SQUARE, ITEM_TYPES.CIRCLE, ITEM_TYPES.STAR];
     }
-    return [ITEM_TYPES.WATER, ITEM_TYPES.FOOD, ITEM_TYPES.BIBLE, ITEM_TYPES.TOY];
+    return [ITEM_TYPES.WATER, ITEM_TYPES.FOOD, ITEM_TYPES.MONEY, ITEM_TYPES.BIBLE, ITEM_TYPES.TOY];
   }
 
   setMode(newMode) {
@@ -157,16 +157,16 @@ export class GameState {
       this.generateChunk(BIOME_TYPES.GEOMETRY_ZONE);
       this.generateChunk(BIOME_TYPES.GEOMETRY_ZONE);
     } else {
-      this.generateChunk(BIOME_TYPES.FAVELA);
+      this.generateChunk(BIOME_TYPES.POVERTY_BELT);
       this.generateChunk(BIOME_TYPES.RICH_DISTRICT);
-      this.generateChunk(BIOME_TYPES.DESERT);
+      this.generateChunk(BIOME_TYPES.FAVELA);
       this.generateChunk(BIOME_TYPES.FIRE_EMERGENCY);
     }
   }
 
   generateChunk(forcedType = null) {
-    const cityBiomeKeys = [
-      BIOME_TYPES.DESERT,
+    const cityBiomeOrder = [
+      BIOME_TYPES.POVERTY_BELT,
       BIOME_TYPES.RICH_DISTRICT,
       BIOME_TYPES.FAVELA,
       BIOME_TYPES.FIRE_EMERGENCY
@@ -176,7 +176,7 @@ export class GameState {
       forcedType ||
       (this.mode === GAME_MODES.GEOMETRY
         ? BIOME_TYPES.GEOMETRY_ZONE
-        : cityBiomeKeys[Math.floor(Math.random() * cityBiomeKeys.length)]);
+        : cityBiomeOrder[this.landmarkCounter % cityBiomeOrder.length]);
 
     const biome = BIOMES_CATALOG[biomeType];
     const levelCfg = this.getCurrentLevelConfig();
@@ -239,8 +239,8 @@ export class GameState {
 
       if (type === BIOME_TYPES.RICH_DISTRICT) {
         bHeight = 90 + Math.random() * 105;
-      } else if (type === BIOME_TYPES.DESERT) {
-        bHeight = 28 + Math.random() * 28;
+      } else if (type === BIOME_TYPES.POVERTY_BELT) {
+        bHeight = 36 + Math.random() * 52;
       } else if (type === BIOME_TYPES.FAVELA) {
         bHeight = 42 + Math.random() * 56;
       } else if (type === BIOME_TYPES.FIRE_EMERGENCY) {
@@ -253,10 +253,13 @@ export class GameState {
         width: bWidth,
         height: bHeight,
         type: type,
+        variant: Math.floor(Math.random() * 3),
         extinguished: false
       });
 
-      currentX += bWidth + 24 + Math.random() * 26;
+      currentX += type === BIOME_TYPES.POVERTY_BELT
+        ? bWidth + 6 + Math.random() * 12 // Casitas más juntas en laderas
+        : bWidth + 24 + Math.random() * 26;
     }
 
     return buildings;
@@ -264,17 +267,19 @@ export class GameState {
 
   generateCitizensForChunk(chunk) {
     const count = 3 + Math.floor(Math.random() * 2);
+    const possibleNeeds = chunk.biome.neededItems;
     for (let i = 0; i < count; i++) {
       const x = chunk.startX + 75 + (i * (chunk.endX - chunk.startX - 140)) / count;
-      const primaryNeed = chunk.biome.neededItems[0];
-      const needConfig = ITEMS_CATALOG[primaryNeed];
+      // Cada ciudadano pide UNA sola opción específica (ej. dinero, agua o comida)
+      const specificNeed = possibleNeeds[i % possibleNeeds.length];
+      const needConfig = ITEMS_CATALOG[specificNeed];
 
       this.citizens.push({
         x: x,
         y: this.canvasHeight - 60,
         biomeType: chunk.type,
         needIcon: needConfig ? needConfig.icon : '❤️',
-        needType: primaryNeed,
+        needType: specificNeed,
         animationOffset: Math.random() * Math.PI * 2,
         isHappy: false,
         happyTimer: 0
@@ -304,7 +309,7 @@ export class GameState {
 
   getBiomeAtX(worldX) {
     const chunk = this.biomeChunks.find(c => worldX >= c.startX && worldX < c.endX);
-    return chunk ? chunk.biome : BIOMES_CATALOG[BIOME_TYPES.DESERT];
+    return chunk ? chunk.biome : BIOMES_CATALOG[BIOME_TYPES.POVERTY_BELT];
   }
 
   getGroundHeightAtX(worldX) {

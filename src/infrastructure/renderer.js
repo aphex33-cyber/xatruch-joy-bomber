@@ -142,6 +142,15 @@ export class CanvasRenderer {
     // Montañas lejanas
     this.renderFarMountains(ctx, w, h, GAME_MODES.CITY);
 
+    // Paisajes y monumentos de Tegucigalpa en el horizonte
+    if (hw.landmarks) {
+      for (const lm of hw.landmarks) {
+        if (lm.x > -220 && lm.x < w + 220) {
+          this.renderLandmark(ctx, { type: lm.type, x: lm.x, y: groundY });
+        }
+      }
+    }
+
     // Cables y postes telefónicos de fondo (efecto ventana de carro)
     ctx.strokeStyle = 'rgba(15, 23, 42, 0.55)';
     ctx.lineWidth = 1.5;
@@ -170,10 +179,28 @@ export class CanvasRenderer {
       ctx.fillRect(dx, groundY + 28, 32, 4);
     }
 
-    // Estrellas coleccionables
+    // Suministros coleccionables del Modo Ciudad (Agua, Comida, Dinero, Biblia, Regalos)
     for (const st of hw.stars) {
       const bob = Math.sin(this.elapsedTime * 7 + st.x * 0.05) * 4;
-      this.sprites.drawGeoShape(ctx, 'STAR', st.x, st.y + bob, st.radius, '#facc15', false);
+      const itemCfg = st.item;
+      if (itemCfg) {
+        ctx.save();
+        ctx.translate(st.x, st.y + bob);
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.beginPath();
+        ctx.arc(0, 0, st.radius + 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = itemCfg.color;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(itemCfg.icon, 0, 1);
+        ctx.restore();
+      } else {
+        this.sprites.drawGeoShape(ctx, 'STAR', st.x, st.y + bob, st.radius, '#facc15', false);
+      }
     }
 
     // Obstáculos en el horizonte
@@ -223,38 +250,11 @@ export class CanvasRenderer {
       }
     }
 
-    // Corredor saltando por la ventana
+    // Corredor: General Florencio Xatruch saltando por Tegucigalpa
     const r = hw.runner;
     const blink = r.invulnTimer > 0 && Math.floor(this.elapsedTime * 16) % 2 === 0;
     if (!blink) {
-      ctx.save();
-      ctx.translate(r.x, r.y);
-      // Sombra en el suelo
-      const shadowScale = Math.max(0.3, 1 - (groundY - r.y) / 140);
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.beginPath();
-      ctx.ellipse(0, groundY - r.y + 2, 12 * shadowScale, 4 * shadowScale, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Piernas animadas
-      const legSwing = r.grounded ? Math.sin(r.runPhase) * 6 : 5;
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(-5 + legSwing, -12, 4, 12);
-      ctx.fillRect(1 - legSwing, -12, 4, 12);
-      // Torso (camiseta neón cyan)
-      ctx.fillStyle = '#38bdf8';
-      ctx.fillRect(-7, -25, 14, 14);
-      // Capa / bufanda al viento
-      ctx.fillStyle = '#f43f5e';
-      ctx.fillRect(-16, -24 + Math.sin(this.elapsedTime * 15) * 2, 10, 4);
-      // Cabeza
-      ctx.fillStyle = '#fed7aa';
-      ctx.fillRect(-5, -35, 10, 10);
-      // Gorra retro
-      ctx.fillStyle = '#facc15';
-      ctx.fillRect(-6, -37, 12, 4);
-      ctx.fillRect(2, -35, 6, 2);
-      ctx.restore();
+      this.sprites.drawXatruchRunner(ctx, r, groundY, this.elapsedTime);
     }
   }
 
@@ -370,47 +370,145 @@ export class CanvasRenderer {
 
       this.drawLandmarkLabel(ctx, x, y - 208, 'EL PICACHO');
     } else if (lm.type === 'JUANA_LAINEZ') {
-      // Cerro Juana Laínez con Monumento a la Paz
-      ctx.fillStyle = '#166534';
+      // Cerro Juana Laínez: Colina verde arbolada + rotonda circular + columnas + anillo + Bandera de Honduras
+      ctx.fillStyle = '#14532d';
       ctx.beginPath();
-      ctx.moveTo(x - 105, y);
-      ctx.quadraticCurveTo(x, y - 145, x + 105, y);
+      ctx.moveTo(x - 135, y);
+      ctx.quadraticCurveTo(x, y - 145, x + 135, y);
+      ctx.fill();
+      // Árboles en la ladera
+      ctx.fillStyle = '#166534';
+      for (let tx = -80; tx <= 80; tx += 28) {
+        ctx.beginPath();
+        ctx.arc(x + tx, y - 65 + Math.abs(tx) * 0.45, 16, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Terraza circular de concreto (Monumento a la Paz)
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(x - 42, y - 122, 84, 12);
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(x - 36, y - 126, 72, 4);
+      // 4 pilares sosteniendo el anillo circular superior
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(x - 16, y - 154, 5, 28);
+      ctx.fillRect(x - 6, y - 154, 4, 28);
+      ctx.fillRect(x + 3, y - 154, 4, 28);
+      ctx.fillRect(x + 12, y - 154, 5, 28);
+      // Corona / anillo superior
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(x - 22, y - 160, 44, 7);
+      // Asta y Bandera Azul-Blanco-Azul de Honduras ondeando
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(x - 1, y - 196, 2, 36);
+      const wave = Math.sin(this.elapsedTime * 6) * 1.5;
+      ctx.fillStyle = '#0284c7';
+      ctx.fillRect(x + 1, y - 195 + wave, 22, 4);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 1, y - 191 + wave, 22, 4);
+      ctx.fillStyle = '#0284c7';
+      ctx.fillRect(x + 1, y - 187 + wave, 22, 4);
+
+      this.drawLandmarkLabel(ctx, x, y - 205, 'CERRO JUANA LAÍNEZ');
+    } else if (lm.type === 'ESTADIO_TGU') {
+      // Estadio Nacional Chelato Uclés (fachada azul con letras blancas y gradas)
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(x - 95, y - 64, 190, 64);
+      // Gradas superiores curvas
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(x - 90, y - 76, 180, 12);
+      // Techo parcial lateral
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(x + 42, y - 82, 52, 6);
+      // Fachada azul central "ESTADIO NACIONAL"
+      ctx.fillStyle = '#0284c7';
+      ctx.fillRect(x - 64, y - 34, 128, 22);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 9px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('ESTADIO NACIONAL', x, y - 20);
+      // Torres de iluminación
+      for (const tx of [x - 82, x + 82]) {
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(tx - 2, y - 102, 4, 26);
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(tx - 7, y - 106, 14, 6);
+      }
+      this.drawLandmarkLabel(ctx, x, y - 114, 'ESTADIO NACIONAL');
+    } else if (lm.type === 'CENTRO_CIVICO') {
+      // Centro Cívico Gubernamental (Torres de cristal celeste inclinadas + plaza verde)
+      // Torre izquierda más alta con techo inclinado
+      ctx.fillStyle = '#0ea5e9';
+      ctx.beginPath();
+      ctx.moveTo(x - 68, y);
+      ctx.lineTo(x - 68, y - 178);
+      ctx.lineTo(x - 20, y - 166);
+      ctx.lineTo(x - 20, y);
+      ctx.closePath();
+      ctx.fill();
+      // Franja lateral blanca de concreto
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(x - 30, y - 168, 10, 168);
+
+      // Torre derecha escalonada de cristal azul
+      ctx.fillStyle = '#0284c7';
+      ctx.fillRect(x + 10, y - 142, 44, 142);
+      ctx.fillStyle = '#bae6fd';
+      for (let r = 12; r < 160; r += 10) {
+        ctx.fillRect(x - 63, y - r, 28, 3);
+        if (r < 136) ctx.fillRect(x + 15, y - r, 32, 3);
+      }
+      // Edificio bajo central + muro verde de plaza
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(x - 20, y - 44, 30, 44);
+      ctx.fillStyle = '#16a34a';
+      ctx.fillRect(x - 74, y - 10, 134, 10);
+
+      this.drawLandmarkLabel(ctx, x, y - 186, 'CENTRO CÍVICO');
+    } else if (lm.type === 'CATEDRAL') {
+      // Catedral de San Miguel Arcángel (Tegucigalpa)
+      // Cúpula trasera
+      ctx.fillStyle = '#e7e5e4';
+      ctx.beginPath();
+      ctx.arc(x, y - 92, 22, Math.PI, 0);
+      ctx.fill();
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(x - 2, y - 124, 4, 10);
+      // Cuerpo central crema barroco
+      ctx.fillStyle = '#f5f5f4';
+      ctx.fillRect(x - 58, y - 82, 116, 82);
+      // Torres gemelas laterales
+      ctx.fillStyle = '#e7e5e4';
+      ctx.fillRect(x - 68, y - 110, 24, 110);
+      ctx.fillRect(x + 44, y - 110, 24, 110);
+      // Techos piramidales rojos de las torres
+      ctx.fillStyle = '#b91c1c';
+      ctx.beginPath();
+      ctx.moveTo(x - 68, y - 110);
+      ctx.lineTo(x - 56, y - 130);
+      ctx.lineTo(x - 44, y - 110);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(x + 44, y - 110);
+      ctx.lineTo(x + 56, y - 130);
+      ctx.lineTo(x + 68, y - 110);
+      ctx.fill();
+      // Tres relojes / medallones circulares centrales
+      ctx.fillStyle = '#78350f';
+      for (const mx of [x - 16, x, x + 16]) {
+        ctx.beginPath();
+        ctx.arc(mx, y - 66, 5, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      // Puerta principal arqueada de madera
+      ctx.fillStyle = '#451a03';
+      ctx.beginPath();
+      ctx.arc(x, y - 24, 13, Math.PI, 0);
+      ctx.lineTo(x + 13, y);
+      ctx.lineTo(x - 13, y);
+      ctx.closePath();
       ctx.fill();
 
-      // Monumento a la Paz (obelisco/torre blanca con bandera)
-      ctx.fillStyle = '#e2e8f0';
-      ctx.fillRect(x - 12, y - 125, 24, 18);
-      ctx.fillStyle = '#f8fafc';
-      ctx.fillRect(x - 5, y - 165, 10, 40);
-      ctx.fillStyle = '#0284c7'; // Bandera azul
-      ctx.fillRect(x + 5, y - 164, 12, 7);
-
-      this.drawLandmarkLabel(ctx, x, y - 174, 'CERRO JUANA LAÍNEZ');
-    } else if (lm.type === 'ESTADIO_TGU') {
-      // Estadio Nacional Chelato Uclés
-      ctx.fillStyle = '#475569';
-      ctx.fillRect(x - 75, y - 55, 150, 55);
-      ctx.fillStyle = '#cbd5e1';
-      ctx.fillRect(x - 80, y - 62, 160, 10);
-      // Torres de iluminación
-      for (const tx of [x - 68, x - 24, x + 24, x + 68]) {
-        ctx.fillStyle = '#334155';
-        ctx.fillRect(tx - 2, y - 92, 4, 30);
-        ctx.fillStyle = '#fef08a';
-        ctx.fillRect(tx - 6, y - 96, 12, 6);
-      }
-      this.drawLandmarkLabel(ctx, x, y - 104, 'ESTADIO NACIONAL');
-    } else if (lm.type === 'CENTRO_CIVICO') {
-      // Centro Cívico Gubernamental (torres gemelas modernas)
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(x - 55, y - 165, 42, 165);
-      ctx.fillRect(x + 12, y - 150, 42, 150);
-      ctx.fillStyle = '#38bdf8';
-      for (let r = 10; r < 155; r += 12) {
-        ctx.fillRect(x - 49, y - r, 30, 4);
-        if (r < 140) ctx.fillRect(x + 18, y - r, 30, 4);
-      }
-      this.drawLandmarkLabel(ctx, x, y - 175, 'CENTRO CÍVICO');
+      this.drawLandmarkLabel(ctx, x, y - 138, 'CATEDRAL DE TEGUCIGALPA');
     } else if (lm.type === 'MERENDON') {
       // Cordillera del Merendón (SPS) con letrero verde/blanco
       ctx.fillStyle = '#14532d';
@@ -501,24 +599,47 @@ export class CanvasRenderer {
     }
 
     if (b.type === BIOME_TYPES.RICH_DISTRICT) {
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(b.x, b.y, b.width, b.height);
-      ctx.fillStyle = '#334155';
-      ctx.fillRect(b.x, b.y, b.width, 6);
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(b.x + b.width * 0.72, b.y, b.width * 0.28, b.height);
+      if (b.variant === 0) {
+        // Edificio comercial moderno (ladrillo + ventanales + alero inclinado + árbol ciprés)
+        const shopH = Math.min(b.height, 74);
+        const shopY = b.y + b.height - shopH;
+        ctx.fillStyle = '#9a3412'; // Ladrillo cálido
+        ctx.fillRect(b.x, shopY, b.width, shopH);
+        // Grandes ventanales de cristal oscuro
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(b.x + 6, shopY + 14, b.width * 0.62, shopH - 18);
+        ctx.fillStyle = '#38bdf844';
+        ctx.fillRect(b.x + 8, shopY + 16, b.width * 0.58, shopH - 22);
+        // Alero moderno horizontal crema
+        ctx.fillStyle = '#f5f5f4';
+        ctx.fillRect(b.x - 5, shopY + 4, b.width + 10, 7);
+        ctx.fillRect(b.x - 3, shopY + shopH * 0.45, b.width + 6, 5);
+        // Letrero verde circular
+        ctx.fillStyle = '#15803d';
+        ctx.beginPath();
+        ctx.arc(b.x + b.width - 10, shopY + 26, 6, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Torre moderna de cristal y acero
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(b.x, b.y, b.width, b.height);
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(b.x, b.y, b.width, 6);
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(b.x + b.width * 0.72, b.y, b.width * 0.28, b.height);
 
-      ctx.fillStyle = '#fbbf24';
-      ctx.fillRect(b.x + b.width / 2 - 2, b.y - 16, 4, 16);
-      if (Math.sin(this.elapsedTime * 5) > 0) {
-        ctx.fillStyle = '#ef4444';
-        ctx.fillRect(b.x + b.width / 2 - 2, b.y - 18, 4, 4);
-      }
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(b.x + b.width / 2 - 2, b.y - 16, 4, 16);
+        if (Math.sin(this.elapsedTime * 5) > 0) {
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(b.x + b.width / 2 - 2, b.y - 18, 4, 4);
+        }
 
-      for (let r = 12; r < b.height - 14; r += 16) {
-        for (let c = 8; c < b.width - 10; c += 14) {
-          ctx.fillStyle = (r + c) % 28 === 0 ? '#fde047' : '#38bdf8';
-          ctx.fillRect(b.x + c, b.y + r, 8, 9);
+        for (let r = 12; r < b.height - 14; r += 16) {
+          for (let c = 8; c < b.width - 10; c += 14) {
+            ctx.fillStyle = (r + c) % 28 === 0 ? '#fde047' : '#38bdf8';
+            ctx.fillRect(b.x + c, b.y + r, 8, 9);
+          }
         }
       }
     } else if (b.type === BIOME_TYPES.FIRE_EMERGENCY) {
@@ -548,36 +669,35 @@ export class CanvasRenderer {
         ctx.textAlign = 'center';
         ctx.fillText('✓ SALVO', b.x + b.width / 2, b.y - 6);
       }
-    } else if (b.type === BIOME_TYPES.FAVELA) {
-      ctx.fillStyle = '#ea580c';
+    } else if (b.type === BIOME_TYPES.POVERTY_BELT || b.type === BIOME_TYPES.FAVELA) {
+      // Casitas en ladera (bloque, ladrillo, lámina de zinc, tinacos y tendederos)
+      const wallColors = ['#a8a29e', '#d97706', '#2dd4bf', '#cbd5e1', '#fb7185'];
+      const baseColor = wallColors[(b.variant || 0) % wallColors.length];
+      ctx.fillStyle = baseColor;
       ctx.fillRect(b.x, b.y, b.width, b.height);
-      ctx.fillStyle = '#c2410c';
-      ctx.fillRect(b.x + b.width * 0.7, b.y, b.width * 0.3, b.height);
-      ctx.fillStyle = '#9a3412';
-      ctx.fillRect(b.x - 2, b.y, b.width + 4, 5);
 
-      ctx.fillStyle = '#0284c7';
-      ctx.fillRect(b.x + 8, b.y - 10, 12, 10);
+      // Segundo nivel apilado diferente (típico de laderas)
+      if (b.height > 54) {
+        ctx.fillStyle = wallColors[((b.variant || 0) + 2) % wallColors.length];
+        ctx.fillRect(b.x + 4, b.y, b.width - 8, b.height * 0.48);
+      }
 
-      ctx.fillStyle = '#78350f';
-      ctx.fillRect(b.x + 8, b.y + b.height - 20, 11, 20);
+      // Techo de lámina de zinc oxidada o gris
+      ctx.fillStyle = '#64748b';
+      ctx.fillRect(b.x - 2, b.y - 3, b.width + 4, 4);
+
+      // Tinaco de agua en el techo
+      ctx.fillStyle = b.variant % 2 === 0 ? '#0284c7' : '#1e293b';
+      ctx.fillRect(b.x + 8, b.y - 12, 10, 9);
+
+      // Puertas y ventanitas
+      ctx.fillStyle = '#451a03';
+      ctx.fillRect(b.x + 8, b.y + b.height - 18, 10, 18);
       ctx.fillStyle = '#fef08a';
-      ctx.fillRect(b.x + b.width - 22, b.y + 12, 10, 10);
-    } else {
-      ctx.fillStyle = '#b45309';
-      ctx.fillRect(b.x, b.y + 12, b.width * 0.6, b.height - 12);
-      ctx.fillStyle = '#78350f';
-      ctx.fillRect(b.x + 6, b.y + b.height - 16, 10, 16);
-
-      const cx = b.x + b.width * 0.8;
-      const cy = b.y + b.height;
-      ctx.fillStyle = '#15803d';
-      ctx.fillRect(cx - 3, cy - 34, 6, 34);
-      ctx.fillRect(cx - 11, cy - 24, 22, 5);
-      ctx.fillRect(cx - 11, cy - 30, 4, 8);
-      ctx.fillRect(cx + 7, cy - 32, 4, 10);
-      ctx.fillStyle = '#22c55e';
-      ctx.fillRect(cx - 1, cy - 32, 2, 30);
+      ctx.fillRect(b.x + b.width - 20, b.y + 12, 8, 8);
+      if (b.height > 54) {
+        ctx.fillRect(b.x + 12, b.y + 10, 8, 8);
+      }
     }
   }
 
@@ -920,11 +1040,12 @@ export class CanvasRenderer {
   renderCarouselHUD(ctx, gameState, w) {
     const items = gameState.carouselItems;
     const selectedIdx = gameState.selectedItemIndex;
-    const slotSize = 48;
-    const gap = 10;
+    const isNarrow = w < 440;
+    const slotSize = isNarrow ? 38 : 48;
+    const gap = isNarrow ? 6 : 10;
     const totalW = items.length * slotSize + (items.length - 1) * gap;
     const startX = (w - totalW) / 2;
-    const startY = this.canvas.height - 54;
+    const startY = this.canvas.height - (slotSize + 6);
 
     ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
     ctx.beginPath();

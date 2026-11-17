@@ -12,6 +12,7 @@ export const GAME_MODES = {
 export const ITEM_TYPES = {
   WATER: 'WATER',
   FOOD: 'FOOD',
+  MONEY: 'MONEY',
   BIBLE: 'BIBLE',
   TOY: 'TOY',
   // Nivel 1 Geometría (Básicas)
@@ -47,7 +48,18 @@ export const ITEMS_CATALOG = {
     splashColor: '#d97706',
     mass: 1.0,
     drag: 0.985,
-    description: 'Nutrición para zonas marginadas y desiertos'
+    description: 'Nutrición para familias y cinturones de pobreza'
+  },
+  [ITEM_TYPES.MONEY]: {
+    id: ITEM_TYPES.MONEY,
+    name: 'Apoyo Económico',
+    shortName: 'Dinero',
+    icon: '💵',
+    color: '#22c55e',
+    splashColor: '#15803d',
+    mass: 0.9,
+    drag: 0.975,
+    description: 'Ayuda financiera directa para quienes lo necesitan'
   },
   [ITEM_TYPES.BIBLE]: {
     id: ITEM_TYPES.BIBLE,
@@ -58,7 +70,7 @@ export const ITEMS_CATALOG = {
     splashColor: '#9333ea',
     mass: 0.95,
     drag: 0.98,
-    description: 'Paz espiritual para corazones vacíos y ejecutivos'
+    description: 'Paz espiritual para el Centro Cívico y zonas modernas'
   },
   [ITEM_TYPES.TOY]: {
     id: ITEM_TYPES.TOY,
@@ -69,7 +81,7 @@ export const ITEMS_CATALOG = {
     splashColor: '#e11d48',
     mass: 0.85,
     drag: 0.975,
-    description: 'Alegría pura, juguetes y fiesta para los niños'
+    description: 'Alegría pura y juguetes para los niños'
   },
   // Geometría Nivel 1
   [ITEM_TYPES.TRIANGLE]: {
@@ -156,7 +168,7 @@ export const ITEMS_CATALOG = {
 };
 
 export const BIOME_TYPES = {
-  DESERT: 'DESERT',
+  POVERTY_BELT: 'POVERTY_BELT',
   RICH_DISTRICT: 'RICH_DISTRICT',
   FAVELA: 'FAVELA',
   FIRE_EMERGENCY: 'FIRE_EMERGENCY',
@@ -164,40 +176,40 @@ export const BIOME_TYPES = {
 };
 
 export const BIOMES_CATALOG = {
-  [BIOME_TYPES.DESERT]: {
-    id: BIOME_TYPES.DESERT,
-    name: 'Zona Seca / Lomas',
-    groundColor: '#d97706',
-    secondaryColor: '#f59e0b',
-    skyGradient: ['#fdba74', '#fed7aa'],
-    accentEmoji: '🏜️',
-    neededItems: [ITEM_TYPES.WATER, ITEM_TYPES.FOOD],
-    happyMessage: '¡Agua bendita! ¡La tierra florece!',
-    unhappyMessage: '¡Aquí hace sed, necesitamos agua o comida!',
-    weightScore: 100
+  [BIOME_TYPES.POVERTY_BELT]: {
+    id: BIOME_TYPES.POVERTY_BELT,
+    name: 'Cinturón de Pobreza',
+    groundColor: '#78716c',
+    secondaryColor: '#a8a29e',
+    skyGradient: ['#0284c7', '#bae6fd'],
+    accentEmoji: '🏘️',
+    neededItems: [ITEM_TYPES.MONEY, ITEM_TYPES.WATER, ITEM_TYPES.FOOD],
+    happyMessage: '¡Justo lo que necesitaba esta familia!',
+    unhappyMessage: '¡Eso no es lo que pidió esta persona!',
+    weightScore: 110
   },
   [BIOME_TYPES.RICH_DISTRICT]: {
     id: BIOME_TYPES.RICH_DISTRICT,
-    name: 'Centro Cívico / Residencial',
+    name: 'Centro Cívico / Zona Moderna',
     groundColor: '#334155',
     secondaryColor: '#64748b',
     skyGradient: ['#1e3a8a', '#38bdf8'],
     accentEmoji: '🏙️',
     neededItems: [ITEM_TYPES.BIBLE],
-    happyMessage: '¡Paz espiritual en medio del estrés!',
-    unhappyMessage: '¡Ya tengo dinero, no me mojes el traje!',
+    happyMessage: '¡Paz espiritual en medio de la ciudad!',
+    unhappyMessage: '¡Aquí buscan paz espiritual, no eso!',
     weightScore: 120
   },
   [BIOME_TYPES.FAVELA]: {
     id: BIOME_TYPES.FAVELA,
-    name: 'Barrio / Los Bordos',
-    groundColor: '#78716c',
-    secondaryColor: '#a8a29e',
-    skyGradient: ['#0284c7', '#bae6fd'],
-    accentEmoji: '🏘️',
-    neededItems: [ITEM_TYPES.FOOD, ITEM_TYPES.TOY, ITEM_TYPES.WATER],
-    happyMessage: '¡Llegó la ayuda y la alegría para todos!',
-    unhappyMessage: '¡Oigan, eso no es lo que pedimos!',
+    name: 'Barrio Popular / Laderas',
+    groundColor: '#57534e',
+    secondaryColor: '#84cc16',
+    skyGradient: ['#0ea5e9', '#e0f2fe'],
+    accentEmoji: '🏡',
+    neededItems: [ITEM_TYPES.FOOD, ITEM_TYPES.TOY, ITEM_TYPES.MONEY],
+    happyMessage: '¡Alegría y esperanza para el barrio!',
+    unhappyMessage: '¡Fíjate en el globo de lo que piden!',
     weightScore: 100
   },
   [BIOME_TYPES.FIRE_EMERGENCY]: {
@@ -235,11 +247,11 @@ export const LEVELS_CONFIG = {
       level: 1,
       id: 'TEGUCIGALPA',
       title: 'Nivel 1: Tegucigalpa',
-      subtitle: 'El Picacho, Cerro Juana Laínez, Estadio Nacional y Centro Cívico',
+      subtitle: 'Juana Laínez, Centro Cívico, Estadio Nacional y Catedral',
       targetScore: 8500,
       minJoy: 65,
       skyTint: null,
-      landmarks: ['PICACHO', 'JUANA_LAINEZ', 'ESTADIO_TGU', 'CENTRO_CIVICO']
+      landmarks: ['JUANA_LAINEZ', 'CENTRO_CIVICO', 'ESTADIO_TGU', 'CATEDRAL', 'PICACHO']
     },
     {
       level: 2,
@@ -276,8 +288,8 @@ export const LEVELS_CONFIG = {
     {
       level: 1,
       id: 'HIGHWAY_ENDLESS',
-      title: 'Salto en Carretera',
-      subtitle: '¡Salta postes, carros y arbustos por la ventana!',
+      title: 'Salto en Carretera (Tegucigalpa)',
+      subtitle: '¡El General Xatruch salta obstáculos y recoge suministros!',
       targetScore: 999999,
       minJoy: 0
     }

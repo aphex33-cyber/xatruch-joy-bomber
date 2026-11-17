@@ -56,9 +56,12 @@ export class JoyScorer {
     this.perfectDrops = 0;
   }
 
-  evaluateImpact(item, biome, hitTarget = true) {
+  evaluateImpact(item, biome, hitTarget = true, targetCitizen = null) {
     this.totalDrops++;
-    const isMatched = biome.neededItems.includes(item.id);
+    // Si hay un ciudadano objetivo cercano, debe coincidir con su petición única
+    const isMatched = targetCitizen
+      ? targetCitizen.needType === item.id
+      : biome.neededItems.includes(item.id);
 
     if (isMatched) {
       if (hitTarget) {
@@ -84,7 +87,6 @@ export class JoyScorer {
           message: biome.happyMessage
         };
       } else {
-        // Cayó en la zona correcta pero lejos de un ciudadano o edificio objetivo
         const points = Math.round(biome.weightScore * 0.4);
         this.score += points;
         const joyGain = 4;
@@ -111,7 +113,9 @@ export class JoyScorer {
         points: 0,
         lostCombo: oldCombo,
         joyDelta: -joyLoss,
-        message: biome.unhappyMessage
+        message: targetCitizen
+          ? `¡Pidió ${targetCitizen.needIcon}, no eso!`
+          : biome.unhappyMessage
       };
     }
   }

@@ -50,34 +50,39 @@ const PLANE_PALETTE = {
   B: '#334155'  // Tren de aterrizaje / llantas
 };
 
-// Matriz 12x14 para el rostro y busto detallado del General Florencio Xatruch
+// Matriz 14x16 basada en el retrato histórico del General Florencio Xatruch
+// Sin sombrero: cabello ondulado entrecano, frente amplia, cejas marcadas, bigote y barba blanca espesa, casaca oscura
 const XATRUCH_MATRIX = [
-  '....KKKK....',
-  '...KKKKKK...',
-  '..KKKGGKKK..',
-  '.KKKKKKKKKK.',
-  '..SSSSSSSS..',
-  '..SBSSSSBS..',
-  '..SWESSSWE..',
-  '..SSSSNSSS..',
-  '..SMMMMMMS..',
-  '...MMMMMM...',
-  '...SSMMSS...',
-  '.GGUUUUUUGG.',
-  '.UUUUUGUUUU.',
-  '.UUUUUUUUUU.'
+  '....HHHHHH....',
+  '...HHGGGGHH...',
+  '..HHSSSSSSHH..',
+  '..HSSSSSSSSSS.',
+  '..SSBSSSSBSS..',
+  '..SSWESSWESS..',
+  '..SSSSNNSSSS..',
+  '..SSMMMMMMSS..',
+  '..SMMMMMMMMS..',
+  '...MMMMMMMM...',
+  '...DDDDDDDD...',
+  '....DDDDDD....',
+  '..UUCCTTTTUU..',
+  '.UUUUCCTUUUUU.',
+  '.UUUUUUUUUUUU.'
 ];
 
 const XATRUCH_PALETTE = {
-  K: '#0f172a', // Kepi / bicornio militar oscuro
-  G: '#fbbf24', // Emblema y charreteras doradas
-  S: '#fed7aa', // Piel rostro
-  B: '#292524', // Cejas pobladas
-  W: '#ffffff', // Esclerótica del ojo
-  E: '#0f172a', // Pupila mirando al frente
-  N: '#f59e0b', // Sombra nariz
-  M: '#1c1917', // Bigote espeso y barba del General Xatruch
-  U: '#1e3a8a'  // Casaca militar azul marino
+  H: '#4b5563', // Cabello entrecano oscuro
+  G: '#9ca3af', // Canas onduladas
+  S: '#f3c69f', // Piel rostro
+  B: '#6b7280', // Cejas entrecanas marcadas
+  W: '#ffffff', // Esclerótica
+  E: '#1f2937', // Pupila expresiva
+  N: '#d99b66', // Nariz definida
+  M: '#f3f4f6', // Bigote y barba blanca/plateada espesa
+  D: '#d1d5db', // Sombra de barba
+  C: '#ffffff', // Cuello blanco de camisa
+  T: '#4b5563', // Corbatín oscuro
+  U: '#1f2937'  // Casaca oscura siglo XIX
 };
 
 // Matrices 10x14 para ciudadanos (frame 1 esperando, frame 2 brazos arriba)
@@ -133,8 +138,8 @@ function getCitizenPalette(biomeType) {
   switch (biomeType) {
     case BIOME_TYPES.RICH_DISTRICT:
       return { H: '#451a03', S: '#fed7aa', E: '#0f172a', B: '#1e293b', P: '#0f172a', K: '#000000' };
-    case BIOME_TYPES.DESERT:
-      return { H: '#eab308', S: '#fdba74', E: '#0f172a', B: '#d97706', P: '#78350f', K: '#451a03' };
+    case BIOME_TYPES.POVERTY_BELT:
+      return { H: '#1c1917', S: '#fdba74', E: '#0f172a', B: '#d97706', P: '#78350f', K: '#451a03' };
     case BIOME_TYPES.FIRE_EMERGENCY:
       return { H: '#ef4444', S: '#fed7aa', E: '#0f172a', B: '#f97316', P: '#334155', K: '#0f172a' };
     default: // FAVELA
@@ -145,11 +150,11 @@ function getCitizenPalette(biomeType) {
 export class SpriteLibrary {
   constructor() {
     this.planeSprite = compilePixelMatrix(PLANE_MATRIX, PLANE_PALETTE, 2.6);
-    this.xatruchSprite = compilePixelMatrix(XATRUCH_MATRIX, XATRUCH_PALETTE, 1.8);
+    this.xatruchSprite = compilePixelMatrix(XATRUCH_MATRIX, XATRUCH_PALETTE, 1.75);
     this.citizenSprites = {};
 
     const biomes = [
-      BIOME_TYPES.DESERT,
+      BIOME_TYPES.POVERTY_BELT,
       BIOME_TYPES.RICH_DISTRICT,
       BIOME_TYPES.FAVELA,
       BIOME_TYPES.FIRE_EMERGENCY
@@ -178,7 +183,7 @@ export class SpriteLibrary {
     ctx.fillRect(15, 0 + scarfWave, 10, 3);
 
     // Piloto: Rostro y busto detallado del General Florencio Xatruch
-    ctx.drawImage(this.xatruchSprite, 32, -16);
+    ctx.drawImage(this.xatruchSprite, 30, -18);
 
     // Sprite principal del avión
     ctx.drawImage(this.planeSprite, 0, 0);
@@ -199,6 +204,39 @@ export class SpriteLibrary {
     ctx.fillRect(propX, propY - propH, 3, propH * 2);
     ctx.fillStyle = '#ef4444';
     ctx.fillRect(propX - 1, propY - 2, 3, 4);
+
+    ctx.restore();
+  }
+
+  /**
+   * Dibuja al General Florencio Xatruch corriendo y saltando en el Modo Carretera
+   */
+  drawXatruchRunner(ctx, runner, groundY, time) {
+    ctx.save();
+    ctx.translate(runner.x, runner.y);
+
+    // Sombra en el suelo
+    const shadowScale = Math.max(0.3, 1 - (groundY - runner.y) / 140);
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(0, groundY - runner.y + 2, 14 * shadowScale, 4 * shadowScale, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Piernas animadas (pantalón oscuro y botas)
+    const legSwing = runner.grounded ? Math.sin(runner.runPhase) * 7 : 5;
+    ctx.fillStyle = '#111827';
+    ctx.fillRect(-5 + legSwing, -13, 5, 13);
+    ctx.fillRect(1 - legSwing, -13, 5, 13);
+
+    // Levita / casaca oscura con cuello blanco
+    ctx.fillStyle = '#1f2937';
+    ctx.fillRect(-9, -27, 18, 15);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-3, -27, 6, 4);
+
+    // Cabeza y barba plateada del General Xatruch (usando su sprite de retrato)
+    const headSize = 22;
+    ctx.drawImage(this.xatruchSprite, -headSize / 2, -46, headSize, headSize);
 
     ctx.restore();
   }

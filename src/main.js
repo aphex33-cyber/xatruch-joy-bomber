@@ -17,6 +17,56 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnDrop = document.getElementById('btnDrop');
   const btnMute = document.getElementById('btnMute');
   const btnMode = document.getElementById('btnMode');
+  const btnFullscreen = document.getElementById('btnFullscreen');
+  const mobilePrompt = document.getElementById('mobileFullscreenPrompt');
+  const btnAcceptFullscreen = document.getElementById('btnAcceptFullscreen');
+  const btnDismissFullscreen = document.getElementById('btnDismissFullscreen');
+  const gameContainer = document.querySelector('.game-container');
+
+  const isMobileDevice = () =>
+    window.innerWidth <= 820 || 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+  const enterFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+        return;
+      }
+      if (gameContainer.requestFullscreen) {
+        await gameContainer.requestFullscreen();
+      } else if (gameContainer.webkitRequestFullscreen) {
+        await gameContainer.webkitRequestFullscreen();
+      }
+      if (screen.orientation && screen.orientation.lock) {
+        await screen.orientation.lock('landscape').catch(() => {});
+      }
+      if (mobilePrompt) mobilePrompt.style.display = 'none';
+    } catch {
+      // Ignorar si el navegador bloquea fullscreen
+    }
+  };
+
+  if (mobilePrompt && isMobileDevice() && !document.fullscreenElement) {
+    mobilePrompt.style.display = 'flex';
+  }
+  if (btnAcceptFullscreen) {
+    btnAcceptFullscreen.addEventListener('click', () => enterFullscreen());
+  }
+  if (btnDismissFullscreen && mobilePrompt) {
+    btnDismissFullscreen.addEventListener('click', () => {
+      mobilePrompt.style.display = 'none';
+    });
+  }
+  if (btnFullscreen) {
+    btnFullscreen.addEventListener('click', () => enterFullscreen());
+  }
+  document.addEventListener('fullscreenchange', () => {
+    setTimeout(() => {
+      renderer.resize();
+      gameState.canvasWidth = canvas.width;
+      gameState.canvasHeight = canvas.height;
+    }, 100);
+  });
 
   const syncModeButtonLabel = () => {
     if (btnMode) {
@@ -110,12 +160,12 @@ window.addEventListener('DOMContentLoaded', () => {
     handleCanvasClick
   );
 
-  inputHandler.attachCanvasEvents(canvas);
+  inputHandler.attachCanvasEvents(canvas, () => gameState.carouselItems.length);
 
   // Escuchar impactos de Modo Ciudad
   const originalEvaluateImpact = gameState.dropEngine.scorer.evaluateImpact.bind(gameState.dropEngine.scorer);
-  gameState.dropEngine.scorer.evaluateImpact = function(item, biome) {
-    const result = originalEvaluateImpact(item, biome);
+  gameState.dropEngine.scorer.evaluateImpact = function(item, biome, hitTarget, targetCitizen) {
+    const result = originalEvaluateImpact(item, biome, hitTarget, targetCitizen);
     if (result.matched) {
       audio.playSuccessJoy(result.combo);
     } else {

@@ -97,12 +97,14 @@ export class DropEngine {
   handleCityImpact(p, groundY, gameState) {
     const biome = gameState.getBiomeAtX(p.x);
 
-    // Verificar si acertó cerca de un ciudadano o edificio en llamas
-    let hitCitizen = false;
+    // Buscar el ciudadano más cercano al impacto
+    let nearestCitizen = null;
+    let minCitizenDist = 78;
     for (const c of gameState.citizens) {
-      if (Math.abs(c.x - p.x) < 75) {
-        hitCitizen = true;
-        break;
+      const dist = Math.abs(c.x - p.x);
+      if (dist < minCitizenDist) {
+        minCitizenDist = dist;
+        nearestCitizen = c;
       }
     }
 
@@ -120,8 +122,13 @@ export class DropEngine {
       }
     }
 
-    const hitTarget = hitCitizen || hitFireBuilding;
-    const result = this.scorer.evaluateImpact(p.item, biome, hitTarget);
+    const hitTarget = Boolean(nearestCitizen) || hitFireBuilding;
+    const result = this.scorer.evaluateImpact(
+      p.item,
+      biome,
+      hitTarget,
+      hitFireBuilding ? null : nearestCitizen
+    );
 
     // Hacer que el paquete ruede un poco al caer (excepto agua que salpica)
     if (p.item.id !== ITEM_TYPES.WATER) {

@@ -17,9 +17,19 @@
       </div>
       <div class="header-actions">
         <button id="btnMode" class="btn-pill">🎮 Modo: Ciudad</button>
+        <button id="btnFullscreen" class="btn-pill">⛶ Pantalla</button>
         <button id="btnMute" class="btn-pill">🔊 Audio: ON</button>
       </div>
     </header>
+
+    <!-- Aviso de Pantalla Completa para Móvil -->
+    <div id="mobileFullscreenPrompt" class="fullscreen-banner" style="display: none;">
+      <span>📱 Para jugar mejor en celular, activa la pantalla completa</span>
+      <div class="banner-actions">
+        <button id="btnAcceptFullscreen" class="btn-banner-accept">⛶ Activar</button>
+        <button id="btnDismissFullscreen" class="btn-banner-close">✕</button>
+      </div>
+    </div>
 
     <!-- Canvas Principal del Juego -->
     <canvas id="gameCanvas" width="960" height="520"></canvas>
@@ -39,18 +49,18 @@
     <div class="instruction-col">
       <h4>🕹️ Controles</h4>
       <ul>
-        <li><span class="kbd">ESPACIO</span> o clic: Iniciar / Soltar objeto</li>
-        <li><span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> <span class="kbd">4</span>: Selección directa de carga</li>
+        <li><span class="kbd">ESPACIO</span> o clic: Soltar / Saltar (Doble salto en Carretera)</li>
+        <li><span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> <span class="kbd">4</span> <span class="kbd">5</span>: Selección directa de carga</li>
         <li><span class="kbd">Q</span> / <span class="kbd">E</span>: Girar carrusel</li>
-        <li><span class="kbd">A</span> / <span class="kbd">D</span>: Regular velocidad del avión</li>
+        <li><span class="kbd">A</span> / <span class="kbd">D</span>: Regular velocidad</li>
       </ul>
     </div>
     <div class="instruction-col">
       <h4>🎯 Compatibilidad</h4>
       <ul>
-        <li>🏜️ <strong>Desierto</strong> ➔ 💧 Agua o 🥖 Comida</li>
-        <li>🏙️ <strong>Barrio Rico</strong> ➔ 📖 Biblia / Sabiduría</li>
-        <li>🏘️ <strong>Favela</strong> ➔ 🎁 Juguetes o 🥖 Comida</li>
+        <li>🏘️ <strong>Cinturón de Pobreza</strong> ➔ 💵 Dinero, 💧 Agua o 🥖 Comida</li>
+        <li>🏙️ <strong>Centro Cívico / Moderna</strong> ➔ 📖 Biblia / Sabiduría</li>
+        <li>🏡 <strong>Barrio Popular</strong> ➔ 🎁 Regalos, 🥖 Comida o 💵 Dinero</li>
         <li>🔥 <strong>Incendio</strong> ➔ 💧 Bomba de Agua</li>
       </ul>
     </div>

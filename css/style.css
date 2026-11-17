@@ -231,54 +231,46 @@ canvas#gameCanvas {
 .game-container:-webkit-full-screen {
   max-width: 100vw;
   width: 100vw;
+  height: 100vh;
   height: 100dvh;
   border-radius: 0;
   border: none;
+  display: flex;
+  flex-direction: column;
   justify-content: space-between;
+  background: var(--bg-main);
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+.game-container:fullscreen .game-header,
+.game-container:-webkit-full-screen .game-header {
+  padding: 6px 14px;
+  flex-shrink: 0;
 }
 
 .game-container:fullscreen canvas#gameCanvas,
 .game-container:-webkit-full-screen canvas#gameCanvas {
-  flex: 1;
+  flex: 1 1 auto;
+  width: 100%;
   min-height: 0;
-  max-height: calc(100dvh - 88px);
 }
 
-body.immersive-fullscreen {
-  padding: 0;
-  overflow: hidden;
-  height: 100dvh;
+.game-container:fullscreen .touch-controls,
+.game-container:-webkit-full-screen .touch-controls {
+  flex-direction: row;
+  padding: 8px 14px;
+  flex-shrink: 0;
 }
 
-body.immersive-fullscreen .instructions-panel,
-body.immersive-fullscreen .fullscreen-banner {
-  display: none !important;
+.game-container:fullscreen .carousel-buttons,
+.game-container:-webkit-full-screen .carousel-buttons {
+  width: auto;
 }
 
-body.immersive-fullscreen .game-container {
-  position: fixed;
-  inset: 0;
-  max-width: 100vw;
-  width: 100vw;
-  height: 100dvh;
-  border-radius: 0;
-  border: none;
-  z-index: 9999;
-  justify-content: space-between;
-}
-
-body.immersive-fullscreen .game-header {
-  padding: 4px 12px;
-}
-
-body.immersive-fullscreen canvas#gameCanvas {
-  flex: 1;
-  min-height: 0;
-  max-height: calc(100dvh - 88px);
-}
-
-body.immersive-fullscreen .touch-controls {
-  padding: 6px 12px;
+.game-container:fullscreen .ctrl-btn-primary,
+.game-container:-webkit-full-screen .ctrl-btn-primary {
+  width: auto;
+  padding: 8px 20px;
 }
 
 @media (max-width: 600px) {

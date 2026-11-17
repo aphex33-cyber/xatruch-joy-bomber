@@ -16,18 +16,15 @@ export class CanvasRenderer {
 
   resize() {
     const rect = this.canvas.parentElement.getBoundingClientRect();
-    const isFullscreen = Boolean(
-      document.fullscreenElement ||
-      document.webkitFullscreenElement ||
-      document.body.classList.contains('immersive-fullscreen')
-    );
-    this.canvas.width = Math.min(960, Math.max(320, Math.floor(rect.width || window.innerWidth || 800)));
+    const isFullscreen = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+
     if (isFullscreen) {
-      const headerEl = document.querySelector('.game-header');
-      const ctrlEl = document.querySelector('.touch-controls');
-      const usedH = (headerEl ? headerEl.offsetHeight : 38) + (ctrlEl ? ctrlEl.offsetHeight : 52);
-      this.canvas.height = Math.max(240, Math.min(540, Math.floor(window.innerHeight - usedH - 4)));
+      const cw = this.canvas.clientWidth || rect.width || window.innerWidth;
+      const ch = this.canvas.clientHeight || (window.innerHeight - 110);
+      this.canvas.width = Math.min(960, Math.max(320, Math.floor(cw)));
+      this.canvas.height = Math.max(240, Math.min(540, Math.floor(ch)));
     } else {
+      this.canvas.width = Math.min(960, Math.max(320, Math.floor(rect.width || 800)));
       this.canvas.height = Math.max(420, Math.min(540, Math.floor(window.innerHeight * 0.68 || 480)));
     }
     this.ctx.imageSmoothingEnabled = false;

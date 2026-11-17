@@ -27,27 +27,17 @@ window.addEventListener('DOMContentLoaded', () => {
   const isMobileDevice = () =>
     window.innerWidth <= 920 || 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-  let manualFullscreen = false;
-
   const syncCanvasSize = () => {
-    setTimeout(() => {
+    const applyResize = () => {
       renderer.resize();
       gameState.onResize(canvas.width, canvas.height);
-    }, 80);
+    };
+    setTimeout(applyResize, 120);
+    setTimeout(applyResize, 350);
   };
 
   const isNativeFullscreen = () =>
     Boolean(document.fullscreenElement || document.webkitFullscreenElement);
-
-  const setImmersiveFullscreen = (enabled) => {
-    if (enabled) {
-      document.body.classList.add('immersive-fullscreen');
-      if (mobilePrompt) mobilePrompt.style.display = 'none';
-    } else {
-      document.body.classList.remove('immersive-fullscreen');
-    }
-    syncCanvasSize();
-  };
 
   const requestRealFullscreen = async () => {
     try {
@@ -61,10 +51,11 @@ window.addEventListener('DOMContentLoaded', () => {
       if (screen.orientation && screen.orientation.lock) {
         await screen.orientation.lock('landscape').catch(() => {});
       }
+      if (mobilePrompt) mobilePrompt.style.display = 'none';
     } catch {
-      // Fallback CSS si el navegador (ej. iOS Safari) restringe Fullscreen API en divs
+      // Ignorar si el navegador bloquea fullscreen
     }
-    setImmersiveFullscreen(true);
+    syncCanvasSize();
   };
 
   const exitRealFullscreen = async () => {
@@ -77,38 +68,22 @@ window.addEventListener('DOMContentLoaded', () => {
     } catch {
       // Ignorar
     }
-    setImmersiveFullscreen(false);
+    syncCanvasSize();
   };
 
   const enterFullscreen = () => {
-    const currentlyFull = isNativeFullscreen() || document.body.classList.contains('immersive-fullscreen');
-    if (currentlyFull) {
-      manualFullscreen = false;
+    if (isNativeFullscreen()) {
       exitRealFullscreen();
     } else {
-      manualFullscreen = true;
       requestRealFullscreen();
     }
   };
 
-  const handleOrientationChange = () => {
-    if (!isMobileDevice()) return;
-    const isLandscape = window.innerWidth > window.innerHeight;
-    if (isLandscape) {
-      setImmersiveFullscreen(true);
-    } else if (!manualFullscreen && !isNativeFullscreen()) {
-      setImmersiveFullscreen(false);
-    }
-  };
-
-  if (mobilePrompt && isMobileDevice() && window.innerHeight > window.innerWidth) {
+  if (mobilePrompt && isMobileDevice() && !isNativeFullscreen()) {
     mobilePrompt.style.display = 'flex';
   }
   if (btnAcceptFullscreen) {
-    btnAcceptFullscreen.addEventListener('click', () => {
-      manualFullscreen = true;
-      requestRealFullscreen();
-    });
+    btnAcceptFullscreen.addEventListener('click', () => requestRealFullscreen());
   }
   if (btnDismissFullscreen && mobilePrompt) {
     btnDismissFullscreen.addEventListener('click', () => {
@@ -119,25 +94,13 @@ window.addEventListener('DOMContentLoaded', () => {
     btnFullscreen.addEventListener('click', () => enterFullscreen());
   }
 
-  document.addEventListener('fullscreenchange', () => {
-    if (!isNativeFullscreen() && !manualFullscreen && window.innerHeight > window.innerWidth) {
-      document.body.classList.remove('immersive-fullscreen');
-    }
-    syncCanvasSize();
-  });
+  document.addEventListener('fullscreenchange', syncCanvasSize);
   document.addEventListener('webkitfullscreenchange', syncCanvasSize);
-
-  window.addEventListener('orientationchange', handleOrientationChange);
+  window.addEventListener('orientationchange', syncCanvasSize);
   if (screen.orientation && screen.orientation.addEventListener) {
-    screen.orientation.addEventListener('change', handleOrientationChange);
+    screen.orientation.addEventListener('change', syncCanvasSize);
   }
-  window.addEventListener('resize', () => {
-    handleOrientationChange();
-    syncCanvasSize();
-  });
-
-  // Ejecutar al inicio por si ya abrió el celular en horizontal
-  handleOrientationChange();
+  window.addEventListener('resize', syncCanvasSize);
 
   const syncModeButtonLabel = () => {
     if (btnMode) {

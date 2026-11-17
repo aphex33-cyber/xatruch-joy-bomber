@@ -62,7 +62,7 @@ export class InputHandler {
     });
   }
 
-  attachCanvasEvents(canvas, getSlotCount = () => 4) {
+  attachCanvasEvents(canvas, getCarouselHitboxes = () => []) {
     canvas.addEventListener('pointerdown', (e) => {
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
@@ -75,21 +75,12 @@ export class InputHandler {
         return;
       }
 
-      // Si el clic es en la parte inferior (carrusel)
-      const isNarrow = canvas.width < 440;
-      const slotSize = isNarrow ? 38 : 48;
-      const gap = isNarrow ? 6 : 10;
-      if (clickY > canvas.height - (slotSize + 14)) {
-        const count = getSlotCount();
-        const totalW = count * slotSize + (count - 1) * gap;
-        const startX = (canvas.width - totalW) / 2;
-
-        if (clickX >= startX && clickX <= startX + totalW) {
-          const index = Math.floor((clickX - startX) / (slotSize + gap));
-          if (index >= 0 && index < count) {
-            this.onSelectIndex(index);
-            return;
-          }
+      // Verificar si tocó algún slot del carrusel (vertical izquierdo o inferior)
+      const hitboxes = getCarouselHitboxes() || [];
+      for (const hb of hitboxes) {
+        if (clickX >= hb.x && clickX <= hb.x + hb.w && clickY >= hb.y && clickY <= hb.y + hb.h) {
+          this.onSelectIndex(hb.idx);
+          return;
         }
       }
 

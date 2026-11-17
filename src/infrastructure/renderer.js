@@ -275,6 +275,10 @@ export class CanvasRenderer {
         this.sprites.drawGangster(ctx, obs);
       } else if (obs.type === 'TRAFFIC_JAM') {
         this.sprites.drawTrafficJam(ctx, obs, this.elapsedTime);
+      } else if (obs.type === 'STRAY_DOG') {
+        this.sprites.drawStrayDog(ctx, obs, this.elapsedTime);
+      } else if (obs.type === 'LA_SUCIA') {
+        this.sprites.drawLaSucia(ctx, obs, this.elapsedTime);
       }
     }
 
@@ -1138,12 +1142,58 @@ export class CanvasRenderer {
   renderCarouselHUD(ctx, gameState, w) {
     const items = gameState.carouselItems;
     const selectedIdx = gameState.selectedItemIndex;
-    const isNarrow = w < 440;
-    const slotSize = isNarrow ? 38 : 48;
-    const gap = isNarrow ? 6 : 10;
+    const h = this.canvas.height;
+    const isFullscreen = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+    const isSideDock = w < 720 || isFullscreen;
+    const effMode = gameState.getEffectiveMode ? gameState.getEffectiveMode() : gameState.mode;
+
+    this.carouselHitboxes = [];
+
+    if (isSideDock) {
+      // Dock vertical en el borde izquierdo (nunca interfiere con carteles de pantalla completa)
+      const hudHeight = w < 620 ? 58 : 46;
+      const availH = Math.max(160, h - hudHeight - 16);
+      const gap = 5;
+      const slotSize = Math.min(40, Math.floor((availH - gap * (items.length - 1) - 12) / items.length));
+      const totalH = items.length * slotSize + (items.length - 1) * gap;
+      const startX = 10;
+      const startY = hudHeight + Math.max(8, Math.floor((availH - totalH) / 2));
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      ctx.beginPath();
+      ctx.roundRect(startX - 5, startY - 6, slotSize + 10, totalH + 12, 8);
+      ctx.fill();
+
+      items.forEach((itemId, idx) => {
+        const x = startX;
+        const y = startY + idx * (slotSize + gap);
+        const itemConfig = ITEMS_CATALOG[itemId];
+        const isSelected = idx === selectedIdx;
+
+        this.carouselHitboxes.push({ idx, x: x - 4, y: y - 2, w: slotSize + 8, h: slotSize + 4 });
+
+        ctx.fillStyle = isSelected ? '#38bdf8' : '#1e293b';
+        ctx.fillRect(x - 2, y - 2, slotSize + 4, slotSize + 4);
+        ctx.fillStyle = isSelected ? '#0f172a' : '#334155';
+        ctx.fillRect(x, y, slotSize, slotSize);
+
+        if (effMode === GAME_MODES.GEOMETRY) {
+          this.sprites.drawGeoShape(ctx, itemId, x + slotSize / 2, y + slotSize / 2, slotSize * 0.27, itemConfig.color, false);
+        } else {
+          ctx.font = `${isSelected ? 18 : 15}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(itemConfig.icon, x + slotSize / 2, y + slotSize / 2 + 1);
+        }
+      });
+      return;
+    }
+
+    const slotSize = 48;
+    const gap = 10;
     const totalW = items.length * slotSize + (items.length - 1) * gap;
     const startX = (w - totalW) / 2;
-    const startY = this.canvas.height - (slotSize + 6);
+    const startY = h - (slotSize + 6);
 
     ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
     ctx.beginPath();
@@ -1156,13 +1206,14 @@ export class CanvasRenderer {
       const itemConfig = ITEMS_CATALOG[itemId];
       const isSelected = idx === selectedIdx;
 
+      this.carouselHitboxes.push({ idx, x: x - 2, y: y - 2, w: slotSize + 4, h: slotSize + 4 });
+
       ctx.fillStyle = isSelected ? '#38bdf8' : '#1e293b';
       ctx.fillRect(x - 2, y - 2, slotSize + 4, slotSize + 4);
 
       ctx.fillStyle = isSelected ? '#0f172a' : '#334155';
       ctx.fillRect(x, y, slotSize, slotSize);
 
-      const effMode = gameState.getEffectiveMode ? gameState.getEffectiveMode() : gameState.mode;
       if (effMode === GAME_MODES.GEOMETRY) {
         this.sprites.drawGeoShape(ctx, itemId, x + slotSize / 2, y + slotSize / 2 - 5, 11, itemConfig.color, false);
       } else {

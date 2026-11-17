@@ -90,7 +90,11 @@ export class HighwayEngine {
   }
 
   spawnObstaclePattern(speed) {
-    const types = ['BUSH', 'SIGN', 'FENCE', 'CAR', 'POLE', 'MACAW', 'DEER', 'GANGSTER', 'TRAFFIC_JAM'];
+    const types = [
+      'BUSH', 'SIGN', 'FENCE', 'CAR', 'POLE',
+      'MACAW', 'DEER', 'GANGSTER', 'TRAFFIC_JAM',
+      'STRAY_DOG', 'LA_SUCIA'
+    ];
     const type = types[Math.floor(Math.random() * types.length)];
 
     let width = 30;
@@ -131,6 +135,14 @@ export class HighwayEngine {
       width = 26;
       height = 40;
       y = this.groundY - height;
+    } else if (type === 'STRAY_DOG') {
+      width = 36;
+      height = 24;
+      y = this.groundY - height;
+    } else if (type === 'LA_SUCIA') {
+      width = 28;
+      height = 46;
+      y = this.groundY - height - 4; // Flota espeluznantemente sobre la carretera
     } else if (type === 'TRAFFIC_JAM') {
       const carCount = 3 + Math.floor(Math.random() * 3); // 3 a 5 carros pegados
       width = carCount * 62 - 6;

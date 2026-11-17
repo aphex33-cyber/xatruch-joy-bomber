@@ -229,7 +229,8 @@ export class GameState {
     // Velocidad inicial en el setting más bajo
     this.plane.baseSpeed = 105 + this.levelIndex * 18;
     this.plane.speed = this.plane.baseSpeed;
-    this.plane.y = Math.max(56, Math.min(88, Math.round(this.canvasHeight * 0.16)));
+    const hudHeight = this.canvasWidth < 620 ? 58 : 46;
+    this.plane.y = Math.max(hudHeight + 26, Math.min(96, Math.round(this.canvasHeight * 0.22)));
 
     if (effMode === GAME_MODES.GEOMETRY) {
       this.generateChunk(BIOME_TYPES.GEOMETRY_ZONE);
@@ -247,10 +248,9 @@ export class GameState {
     this.canvasWidth = newWidth;
     this.canvasHeight = newHeight;
 
-    // Mantener el avión arriba en el cielo, justo debajo del HUD
-    const isMobileHud = newWidth < 620;
-    const minSkyY = isMobileHud ? 62 : 54;
-    this.plane.y = Math.max(minSkyY, Math.min(88, Math.round(newHeight * 0.16)));
+    // Mantener el avión y la cabeza de Xatruch (y - 18) siempre debajo del HUD
+    const hudHeight = newWidth < 620 ? 58 : 46;
+    this.plane.y = Math.max(hudHeight + 26, Math.min(96, Math.round(newHeight * 0.22)));
 
     const newGroundY = newHeight - 60;
     for (const chunk of this.biomeChunks) {

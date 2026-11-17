@@ -20,9 +20,6 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnMode = document.getElementById('btnMode');
   const btnHangar = document.getElementById('btnHangar');
   const btnFullscreen = document.getElementById('btnFullscreen');
-  const mobilePrompt = document.getElementById('mobileFullscreenPrompt');
-  const btnAcceptFullscreen = document.getElementById('btnAcceptFullscreen');
-  const btnDismissFullscreen = document.getElementById('btnDismissFullscreen');
   const gameContainer = document.querySelector('.game-container');
 
   const isMobileDevice = () =>
@@ -52,7 +49,6 @@ window.addEventListener('DOMContentLoaded', () => {
       if (screen.orientation && screen.orientation.lock) {
         await screen.orientation.lock('landscape').catch(() => {});
       }
-      if (mobilePrompt) mobilePrompt.style.display = 'none';
     } catch {
       // Ignorar si el navegador bloquea fullscreen
     }
@@ -80,17 +76,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  if (mobilePrompt && isMobileDevice() && !isNativeFullscreen()) {
-    mobilePrompt.style.display = 'flex';
-  }
-  if (btnAcceptFullscreen) {
-    btnAcceptFullscreen.addEventListener('click', () => requestRealFullscreen());
-  }
-  if (btnDismissFullscreen && mobilePrompt) {
-    btnDismissFullscreen.addEventListener('click', () => {
-      mobilePrompt.style.display = 'none';
-    });
-  }
   if (btnFullscreen) {
     btnFullscreen.addEventListener('click', () => enterFullscreen());
   }
@@ -208,7 +193,7 @@ window.addEventListener('DOMContentLoaded', () => {
     handleCanvasClick
   );
 
-  inputHandler.attachCanvasEvents(canvas, () => gameState.carouselItems.length);
+  inputHandler.attachCanvasEvents(canvas, () => renderer.carouselHitboxes);
 
   // Escuchar impactos de Modo Ciudad
   const originalEvaluateImpact = gameState.dropEngine.scorer.evaluateImpact.bind(gameState.dropEngine.scorer);

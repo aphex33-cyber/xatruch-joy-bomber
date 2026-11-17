@@ -392,6 +392,87 @@ export class SpriteLibrary {
   }
 
   /**
+   * Perro callejero ladrando en la carretera
+   */
+  drawStrayDog(ctx, obs, time) {
+    const x = obs.x;
+    const y = obs.y;
+    const legRun = Math.sin(time * 22 + x * 0.1) * 3;
+    ctx.save();
+    // Patas corriendo
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(x + 7 + legRun, y + 15, 4, 9);
+    ctx.fillRect(x + 24 - legRun, y + 15, 4, 9);
+    // Cuerpo con contorno oscuro
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(x + 6, y + 6, 24, 11);
+    ctx.fillStyle = '#b45309';
+    ctx.fillRect(x + 8, y + 8, 20, 7);
+    // Cola erizada
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(x + 28, y + 3, 6, 4);
+    // Cabeza y hocico ladrando hacia la izquierda
+    ctx.fillStyle = '#b45309';
+    ctx.fillRect(x + 2, y + 3, 9, 8);
+    ctx.fillRect(x, y + 6, 4, 4);
+    ctx.fillStyle = '#0f172a'; // Oreja y ojo
+    ctx.fillRect(x + 7, y + 1, 3, 4);
+    ctx.fillRect(x + 4, y + 5, 2, 2);
+    // Ladrido
+    ctx.font = 'bold 9px "JetBrains Mono", monospace';
+    ctx.fillStyle = '#fef08a';
+    ctx.textAlign = 'center';
+    ctx.fillText('¡GUAU!', x + 14, y - 4);
+    ctx.restore();
+  }
+
+  /**
+   * La Sucia (leyenda hondureña) asustando en la carretera
+   */
+  drawLaSucia(ctx, obs, time) {
+    const x = obs.x;
+    const y = obs.y + Math.sin(time * 6) * 3;
+    ctx.save();
+    // Aura espectral celeste/morada
+    ctx.fillStyle = 'rgba(192, 132, 252, 0.25)';
+    ctx.beginPath();
+    ctx.ellipse(x + 14, y + 24, 18, 26, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Vestido blanco rasgado y flotante
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(x + 5, y + 14, 18, 30);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(x + 7, y + 15, 14, 27);
+    // Puntas rasgadas del vestido abajo
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(x + 7, y + 40, 4, 5);
+    ctx.fillRect(x + 13, y + 41, 4, 4);
+    ctx.fillRect(x + 18, y + 39, 3, 5);
+
+    // Brazos extendidos asustando hacia el General Xatruch
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillRect(x - 4, y + 16, 11, 4);
+    ctx.fillRect(x - 6, y + 15, 3, 2);
+
+    // Cabeza y cabellera negra larga y enmarañada
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(x + 6, y + 1, 16, 17);
+    ctx.fillRect(x + 12, y + 14, 10, 12);
+    // Ojos brillantes espeluznantes
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(x + 8, y + 7, 2, 2);
+    ctx.fillRect(x + 12, y + 7, 2, 2);
+
+    // Texto de susto
+    ctx.font = 'bold 9px "JetBrains Mono", monospace';
+    ctx.fillStyle = '#e879f9';
+    ctx.textAlign = 'center';
+    ctx.fillText('¡UUUHHH! 👻', x + 14, y - 5);
+    ctx.restore();
+  }
+
+  /**
    * Dibuja al General Florencio Xatruch corriendo y saltando en el Modo Carretera
    */
   drawXatruchRunner(ctx, runner, groundY, time) {

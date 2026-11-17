@@ -4,10 +4,69 @@
  */
 
 export const GAME_MODES = {
+  STORY: 'STORY',
   CITY: 'CITY',
   GEOMETRY: 'GEOMETRY',
   HIGHWAY: 'HIGHWAY'
 };
+
+export const STORY_STAGES = [
+  {
+    stageIndex: 0,
+    subMode: 'CITY',
+    levelIndex: 0,
+    title: 'Cap. 1: Tegucigalpa',
+    subtitle: 'Lleva alegría a Juana Laínez, Centro Cívico, Estadio y Catedral'
+  },
+  {
+    stageIndex: 1,
+    subMode: 'CITY',
+    levelIndex: 1,
+    title: 'Cap. 2: San Pedro Sula',
+    subtitle: 'Vuela sobre el Merendón, Estadio Olímpico y Los Bordos'
+  },
+  {
+    stageIndex: 2,
+    subMode: 'GEOMETRY',
+    levelIndex: 0,
+    title: 'Cap. 3: Reconstrucción I',
+    subtitle: 'Encaja las estructuras básicas para reconstruir plazas'
+  },
+  {
+    stageIndex: 3,
+    subMode: 'GEOMETRY',
+    levelIndex: 1,
+    title: 'Cap. 4: Reconstrucción II',
+    subtitle: 'Gran Final: encaja las figuras complejas de precisión'
+  }
+];
+
+export const PLANES_CATALOG = [
+  {
+    id: 'CLASSIC',
+    name: 'Biplano Xatruch',
+    unlockStars: 0,
+    palette: { O: '#0f172a', R: '#ef4444', W: '#f8fafc', S: '#94a3b8', C: '#38bdf8', G: '#fbbf24', B: '#334155' }
+  },
+  {
+    id: 'AZUL_BLANCO',
+    name: 'Halcón Azul-Blanco',
+    unlockStars: 3,
+    palette: { O: '#0f172a', R: '#0284c7', W: '#f8fafc', S: '#bae6fd', C: '#fde047', G: '#38bdf8', B: '#1e3a8a' }
+  },
+  {
+    id: 'DORADO',
+    name: 'Águila Dorada',
+    unlockStars: 6,
+    palette: { O: '#0f172a', R: '#d97706', W: '#fef08a', S: '#eab308', C: '#38bdf8', G: '#ffffff', B: '#78350f' }
+  },
+  {
+    id: 'LEYENDA',
+    name: 'Relámpago Neón',
+    unlockStars: 9,
+    palette: { O: '#020617', R: '#a855f7', W: '#1e293b', S: '#0f172a', C: '#22d3ee', G: '#f43f5e', B: '#334155' }
+  }
+];
 
 export const ITEM_TYPES = {
   WATER: 'WATER',

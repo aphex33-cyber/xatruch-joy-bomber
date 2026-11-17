@@ -35,6 +35,66 @@ export class HighScoreStore {
   }
 }
 
+const PROGRESS_STORAGE_KEY = 'joy_bomber_progress_v1';
+
+export class ProgressStore {
+  static load() {
+    try {
+      const raw = window.localStorage.getItem(PROGRESS_STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {
+      // Ignorar
+    }
+    return { stageStars: {}, selectedPlaneId: 'CLASSIC', storyCompleted: false };
+  }
+
+  static save(data) {
+    try {
+      window.localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(data));
+    } catch {
+      // Ignorar
+    }
+  }
+
+  static getTotalStars() {
+    const data = this.load();
+    return Object.values(data.stageStars || {}).reduce((acc, s) => acc + s, 0);
+  }
+
+  static recordStageStars(stageKey, stars) {
+    const data = this.load();
+    if (!data.stageStars) data.stageStars = {};
+    const prev = data.stageStars[stageKey] || 0;
+    if (stars > prev) {
+      data.stageStars[stageKey] = stars;
+      this.save(data);
+    }
+    return this.getTotalStars();
+  }
+
+  static markStoryCompleted() {
+    const data = this.load();
+    data.storyCompleted = true;
+    this.save(data);
+  }
+
+  static getSelectedPlaneId() {
+    return this.load().selectedPlaneId || 'CLASSIC';
+  }
+
+  static setSelectedPlaneId(planeId) {
+    const data = this.load();
+    data.selectedPlaneId = planeId;
+    this.save(data);
+  }
+}
+
+export function calculateStars(joy, maxCombo) {
+  if (joy >= 85 && maxCombo >= 5) return 3;
+  if (joy >= 75) return 2;
+  return 1;
+}
+
 export class JoyScorer {
   constructor() {
     this.joy = 60;        // 0 a 100%

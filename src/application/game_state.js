@@ -4,15 +4,18 @@ import {
   GAME_MODES,
   ITEM_TYPES,
   ITEMS_CATALOG,
-  LEVELS_CONFIG
+  LEVELS_CONFIG,
+  PLANES_CATALOG,
+  STORY_STAGES
 } from '../domain/types.js';
-import { HighScoreStore } from '../domain/score.js';
+import { HighScoreStore, ProgressStore, calculateStars } from '../domain/score.js';
 import { DropEngine } from './drop_engine.js';
 import { HighwayEngine } from './highway_engine.js';
 
 export const GAME_STATUS = {
   START: 'START',
   PLAYING: 'PLAYING',
+  RESCUE_PROMPT: 'RESCUE_PROMPT',
   LEVEL_COMPLETE: 'LEVEL_COMPLETE',
   VICTORY: 'VICTORY',
   GAMEOVER: 'GAMEOVER'
@@ -23,14 +26,20 @@ export class GameState {
     this.canvasWidth = canvasWidth;
     this.canvasHeight = canvasHeight;
     this.status = GAME_STATUS.START;
-    this.mode = GAME_MODES.CITY;
-    this.levelIndex = 0; // 0 = Nivel 1, 1 = Nivel 2
+    this.mode = GAME_MODES.STORY;
+    this.levelIndex = 0; // 0 = Nivel 1, 1 = Nivel 2 (en Story: 0..3)
 
     this.dropEngine = new DropEngine();
     this.highwayEngine = new HighwayEngine(canvasWidth, canvasHeight);
 
     this.highScore = HighScoreStore.get(this.mode);
     this.isNewRecord = false;
+    this.totalStars = ProgressStore.getTotalStars();
+    this.lastEarnedStars = 0;
+    this.selectedPlaneId = ProgressStore.getSelectedPlaneId();
+
+    this.isRescueActive = false;
+    this.rescueUsedThisRun = false;
 
     this.carouselItems = this.getItemsForCurrentLevel();
     this.selectedItemIndex = 0;
@@ -68,22 +77,59 @@ export class GameState {
     this.initWorld();
   }
 
+  getEffectiveMode() {
+    if (this.isRescueActive) return GAME_MODES.HIGHWAY;
+    if (this.mode === GAME_MODES.STORY) {
+      const st = STORY_STAGES[Math.min(this.levelIndex, STORY_STAGES.length - 1)];
+      return st.subMode;
+    }
+    return this.mode;
+  }
+
   getCurrentLevelConfig() {
+    if (this.isRescueActive) {
+      return LEVELS_CONFIG[GAME_MODES.HIGHWAY][0];
+    }
+    if (this.mode === GAME_MODES.STORY) {
+      const st = STORY_STAGES[Math.min(this.levelIndex, STORY_STAGES.length - 1)];
+      const baseCfg = LEVELS_CONFIG[st.subMode][st.levelIndex];
+      return {
+        ...baseCfg,
+        title: st.title,
+        subtitle: st.subtitle
+      };
+    }
     const list = LEVELS_CONFIG[this.mode] || LEVELS_CONFIG[GAME_MODES.CITY];
     return list[Math.min(this.levelIndex, list.length - 1)];
   }
 
   getItemsForCurrentLevel() {
-    if (this.mode === GAME_MODES.GEOMETRY) {
+    const effMode = this.getEffectiveMode();
+    if (effMode === GAME_MODES.GEOMETRY) {
       const cfg = this.getCurrentLevelConfig();
       return cfg.items || [ITEM_TYPES.TRIANGLE, ITEM_TYPES.SQUARE, ITEM_TYPES.CIRCLE, ITEM_TYPES.STAR];
     }
     return [ITEM_TYPES.WATER, ITEM_TYPES.FOOD, ITEM_TYPES.MONEY, ITEM_TYPES.BIBLE, ITEM_TYPES.TOY];
   }
 
+  cyclePlane() {
+    const unlocked = PLANES_CATALOG.filter(p => this.totalStars >= p.unlockStars);
+    const idx = unlocked.findIndex(p => p.id === this.selectedPlaneId);
+    const next = unlocked[(idx + 1) % unlocked.length] || PLANES_CATALOG[0];
+    this.selectedPlaneId = next.id;
+    ProgressStore.setSelectedPlaneId(next.id);
+    return next;
+  }
+
+  getSelectedPlaneConfig() {
+    return PLANES_CATALOG.find(p => p.id === this.selectedPlaneId) || PLANES_CATALOG[0];
+  }
+
   setMode(newMode) {
     this.mode = newMode;
     this.levelIndex = 0;
+    this.isRescueActive = false;
+    this.rescueUsedThisRun = false;
     this.highScore = HighScoreStore.get(this.mode);
     this.isNewRecord = false;
     this.carouselItems = this.getItemsForCurrentLevel();
@@ -97,12 +143,23 @@ export class GameState {
       this.mode = mode;
     }
     this.levelIndex = 0;
+    this.isRescueActive = false;
+    this.rescueUsedThisRun = false;
     this.highScore = HighScoreStore.get(this.mode);
     this.isNewRecord = false;
     this.carouselItems = this.getItemsForCurrentLevel();
     this.selectedItemIndex = 0;
     this.dropEngine.scorer.reset();
     this.initWorld();
+    this.status = GAME_STATUS.PLAYING;
+  }
+
+  startRescueMission() {
+    this.isRescueActive = true;
+    this.rescueUsedThisRun = true;
+    this.plane.baseSpeed = 205;
+    this.plane.speed = 205;
+    this.highwayEngine.reset(this.canvasWidth, this.canvasHeight, true);
     this.status = GAME_STATUS.PLAYING;
   }
 
@@ -113,14 +170,21 @@ export class GameState {
   }
 
   advanceToNextLevel() {
-    const levels = LEVELS_CONFIG[this.mode];
-    if (this.levelIndex + 1 < levels.length) {
+    const totalLevels =
+      this.mode === GAME_MODES.STORY
+        ? STORY_STAGES.length
+        : (LEVELS_CONFIG[this.mode] || []).length;
+
+    if (this.levelIndex + 1 < totalLevels) {
       this.levelIndex++;
       this.carouselItems = this.getItemsForCurrentLevel();
       this.selectedItemIndex = 0;
       this.initWorld();
       this.status = GAME_STATUS.PLAYING;
     } else {
+      if (this.mode === GAME_MODES.STORY) {
+        ProgressStore.markStoryCompleted();
+      }
       this.finalizeRunHighScore();
       this.status = GAME_STATUS.VICTORY;
     }
@@ -140,20 +204,22 @@ export class GameState {
     this.landmarkCounter = 0;
     this.dropCooldown = 0;
 
-    if (this.mode === GAME_MODES.HIGHWAY) {
+    const effMode = this.getEffectiveMode();
+
+    if (effMode === GAME_MODES.HIGHWAY) {
       this.plane.baseSpeed = 195;
       this.plane.speed = 195;
       this.dropEngine.scorer.joy = 100;
-      this.highwayEngine.reset(this.canvasWidth, this.canvasHeight);
+      this.highwayEngine.reset(this.canvasWidth, this.canvasHeight, this.isRescueActive);
       return;
     }
 
     // Velocidad inicial en el setting más bajo
-    this.plane.baseSpeed = 105 + this.levelIndex * 25;
+    this.plane.baseSpeed = 105 + this.levelIndex * 18;
     this.plane.speed = this.plane.baseSpeed;
     this.plane.y = Math.max(56, Math.min(88, Math.round(this.canvasHeight * 0.16)));
 
-    if (this.mode === GAME_MODES.GEOMETRY) {
+    if (effMode === GAME_MODES.GEOMETRY) {
       this.generateChunk(BIOME_TYPES.GEOMETRY_ZONE);
       this.generateChunk(BIOME_TYPES.GEOMETRY_ZONE);
       this.generateChunk(BIOME_TYPES.GEOMETRY_ZONE);
@@ -207,9 +273,10 @@ export class GameState {
       BIOME_TYPES.FIRE_EMERGENCY
     ];
 
+    const effMode = this.getEffectiveMode();
     const biomeType =
       forcedType ||
-      (this.mode === GAME_MODES.GEOMETRY
+      (effMode === GAME_MODES.GEOMETRY
         ? BIOME_TYPES.GEOMETRY_ZONE
         : cityBiomeOrder[this.landmarkCounter % cityBiomeOrder.length]);
 
@@ -217,7 +284,7 @@ export class GameState {
     const levelCfg = this.getCurrentLevelConfig();
 
     let landmark = null;
-    if (this.mode === GAME_MODES.CITY && levelCfg.landmarks && levelCfg.landmarks.length > 0) {
+    if (effMode === GAME_MODES.CITY && levelCfg.landmarks && levelCfg.landmarks.length > 0) {
       const lmType = levelCfg.landmarks[this.landmarkCounter % levelCfg.landmarks.length];
       this.landmarkCounter++;
       landmark = {
@@ -237,7 +304,7 @@ export class GameState {
       buildings: this.generateBuildingsForBiome(biomeType, this.nextChunkX, this.chunkWidth)
     };
 
-    if (this.mode === GAME_MODES.GEOMETRY) {
+    if (effMode === GAME_MODES.GEOMETRY) {
       this.generateGeometrySlotsForChunk(chunk);
     } else {
       this.generateCitizensForChunk(chunk);
@@ -369,7 +436,7 @@ export class GameState {
 
   dropSelectedItem() {
     if (this.status !== GAME_STATUS.PLAYING) return null;
-    if (this.mode === GAME_MODES.HIGHWAY) {
+    if (this.getEffectiveMode() === GAME_MODES.HIGHWAY) {
       return this.highwayEngine.jump();
     }
     if (this.dropCooldown > 0) return null; // Bloqueo anti-spam
@@ -385,8 +452,7 @@ export class GameState {
 
     this.levelTime += dt;
 
-    if (this.mode === GAME_MODES.HIGHWAY) {
-      // Velocidad progresiva en carretera (de 195 hasta 480)
+    if (this.getEffectiveMode() === GAME_MODES.HIGHWAY) {
       this.plane.baseSpeed = Math.min(480, 195 + this.levelTime * 3.2);
       const speedOffset = inputState.speedUp ? 55 : inputState.slowDown ? -45 : 0;
       const targetSpeed = Math.max(140, this.plane.baseSpeed + speedOffset);
@@ -396,9 +462,28 @@ export class GameState {
       this.worldDistance += moveDist;
 
       this.dropEngine.update(dt, this, moveDist);
-      // Restaurar joy que decae en dropEngine, ya que en Highway depende de las vidas
-      const isDead = this.highwayEngine.update(dt, this.plane.speed, this.dropEngine.scorer, this.dropEngine);
-      if (isDead) {
+      const hwState = this.highwayEngine.update(dt, this.plane.speed, this.dropEngine.scorer, this.dropEngine);
+
+      if (hwState === 'RESCUED') {
+        this.isRescueActive = false;
+        this.dropEngine.scorer.joy = 55;
+        this.plane.baseSpeed = 135;
+        this.plane.speed = 135;
+        this.dropEngine.floatingTexts.push({
+          x: this.plane.x + 80,
+          y: this.plane.y + 45,
+          text: '✈️ ¡RESCATE EXITOSO!',
+          subtext: '+55% JOY RECUPERADA',
+          color: '#4ade80',
+          life: 2.5,
+          maxLife: 2.5,
+          vy: -25
+        });
+        return;
+      }
+
+      if (hwState === 'DEAD') {
+        this.isRescueActive = false;
         this.finalizeRunHighScore();
         this.status = GAME_STATUS.GAMEOVER;
       }
@@ -501,10 +586,22 @@ export class GameState {
       this.dropEngine.scorer.score >= levelCfg.targetScore &&
       this.dropEngine.scorer.joy >= levelCfg.minJoy
     ) {
-      const levels = LEVELS_CONFIG[this.mode];
-      if (this.levelIndex + 1 < levels.length) {
+      const stars = calculateStars(this.dropEngine.scorer.joy, this.dropEngine.scorer.maxCombo);
+      this.lastEarnedStars = stars;
+      const stageKey = `${this.mode}_${this.levelIndex}`;
+      this.totalStars = ProgressStore.recordStageStars(stageKey, stars);
+
+      const totalLevels =
+        this.mode === GAME_MODES.STORY
+          ? STORY_STAGES.length
+          : (LEVELS_CONFIG[this.mode] || []).length;
+
+      if (this.levelIndex + 1 < totalLevels) {
         this.status = GAME_STATUS.LEVEL_COMPLETE;
       } else {
+        if (this.mode === GAME_MODES.STORY) {
+          ProgressStore.markStoryCompleted();
+        }
         this.finalizeRunHighScore();
         this.status = GAME_STATUS.VICTORY;
       }
@@ -512,8 +609,12 @@ export class GameState {
     }
 
     if (this.dropEngine.scorer.joy <= 0) {
-      this.finalizeRunHighScore();
-      this.status = GAME_STATUS.GAMEOVER;
+      if (!this.rescueUsedThisRun) {
+        this.status = GAME_STATUS.RESCUE_PROMPT;
+      } else {
+        this.finalizeRunHighScore();
+        this.status = GAME_STATUS.GAMEOVER;
+      }
     }
   }
 

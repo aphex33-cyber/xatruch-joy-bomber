@@ -18,6 +18,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnDrop = document.getElementById('btnDrop');
   const btnMute = document.getElementById('btnMute');
   const btnMode = document.getElementById('btnMode');
+  const btnHangar = document.getElementById('btnHangar');
   const btnFullscreen = document.getElementById('btnFullscreen');
   const mobilePrompt = document.getElementById('mobileFullscreenPrompt');
   const btnAcceptFullscreen = document.getElementById('btnAcceptFullscreen');
@@ -104,17 +105,24 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const syncModeButtonLabel = () => {
     if (btnMode) {
-      if (gameState.mode === GAME_MODES.CITY) btnMode.textContent = '🎮 Modo: Ciudad';
+      if (gameState.mode === GAME_MODES.STORY) btnMode.textContent = '📖 Modo: Historia';
+      else if (gameState.mode === GAME_MODES.CITY) btnMode.textContent = '🏙️ Modo: Ciudad';
       else if (gameState.mode === GAME_MODES.GEOMETRY) btnMode.textContent = '📐 Modo: Geometría';
       else btnMode.textContent = '🏃 Modo: Carretera';
     }
     if (btnDrop) {
+      const effMode = gameState.getEffectiveMode ? gameState.getEffectiveMode() : gameState.mode;
       btnDrop.textContent =
-        gameState.mode === GAME_MODES.HIGHWAY
+        effMode === GAME_MODES.HIGHWAY
           ? '⬆️ SALTAR [ESPACIO]'
           : '🚀 SOLTAR [ESPACIO]';
     }
+    if (btnHangar) {
+      const planeCfg = gameState.getSelectedPlaneConfig();
+      btnHangar.textContent = `✈️ ${planeCfg.name.split(' ')[0]}`;
+    }
   };
+  syncModeButtonLabel();
 
   let lastTime = performance.now();
 
@@ -126,15 +134,22 @@ window.addEventListener('DOMContentLoaded', () => {
     if (gameState.status === GAME_STATUS.START) {
       gameState.startGame(gameState.mode);
       syncModeButtonLabel();
+    } else if (gameState.status === GAME_STATUS.RESCUE_PROMPT) {
+      gameState.startRescueMission();
+      syncModeButtonLabel();
     } else if (gameState.status === GAME_STATUS.LEVEL_COMPLETE) {
       gameState.advanceToNextLevel();
+      syncModeButtonLabel();
     } else if (gameState.status === GAME_STATUS.VICTORY) {
       gameState.status = GAME_STATUS.START;
+      syncModeButtonLabel();
     } else if (gameState.status === GAME_STATUS.GAMEOVER) {
       gameState.restart();
+      syncModeButtonLabel();
     } else if (gameState.status === GAME_STATUS.PLAYING) {
       const actionDone = gameState.dropSelectedItem();
-      if (actionDone && gameState.mode !== GAME_MODES.HIGHWAY) {
+      const effMode = gameState.getEffectiveMode();
+      if (actionDone && effMode !== GAME_MODES.HIGHWAY) {
         audio.playDrop();
       }
     }
@@ -166,16 +181,9 @@ window.addEventListener('DOMContentLoaded', () => {
   const handleSelectIndex = (idx) => {
     audio.ensureContext();
     if (gameState.status === GAME_STATUS.START) {
-      if (idx === 0) {
-        gameState.startGame(GAME_MODES.CITY);
-        syncModeButtonLabel();
-        audio.playCarouselClick();
-      } else if (idx === 1) {
-        gameState.startGame(GAME_MODES.GEOMETRY);
-        syncModeButtonLabel();
-        audio.playCarouselClick();
-      } else if (idx === 2) {
-        gameState.startGame(GAME_MODES.HIGHWAY);
+      const modes = [GAME_MODES.STORY, GAME_MODES.CITY, GAME_MODES.GEOMETRY, GAME_MODES.HIGHWAY];
+      if (idx >= 0 && idx < modes.length) {
+        gameState.startGame(modes[idx]);
         syncModeButtonLabel();
         audio.playCarouselClick();
       }
@@ -254,11 +262,19 @@ window.addEventListener('DOMContentLoaded', () => {
       btnMute.textContent = isMuted ? '🔇 Audio: OFF' : '🔊 Audio: ON';
     });
   }
+  if (btnHangar) {
+    btnHangar.addEventListener('click', () => {
+      audio.ensureContext();
+      audio.playCarouselClick();
+      gameState.cyclePlane();
+      syncModeButtonLabel();
+    });
+  }
   if (btnMode) {
     btnMode.addEventListener('click', () => {
       audio.ensureContext();
       audio.playCarouselClick();
-      const order = [GAME_MODES.CITY, GAME_MODES.GEOMETRY, GAME_MODES.HIGHWAY];
+      const order = [GAME_MODES.STORY, GAME_MODES.CITY, GAME_MODES.GEOMETRY, GAME_MODES.HIGHWAY];
       const nextMode = order[(order.indexOf(gameState.mode) + 1) % order.length];
       gameState.setMode(nextMode);
       gameState.status = GAME_STATUS.START;

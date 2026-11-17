@@ -1,4 +1,4 @@
-import { BIOME_TYPES, ITEM_TYPES } from '../domain/types.js';
+import { BIOME_TYPES, ITEM_TYPES, PLANES_CATALOG } from '../domain/types.js';
 
 /**
  * Compila una matriz ASCII de píxeles en un canvas offscreen para renderizado rápido 16-bit
@@ -151,7 +151,11 @@ function getCitizenPalette(biomeType) {
 
 export class SpriteLibrary {
   constructor() {
-    this.planeSprite = compilePixelMatrix(PLANE_MATRIX, PLANE_PALETTE, 2.6);
+    this.planeSprites = {};
+    for (const p of PLANES_CATALOG) {
+      this.planeSprites[p.id] = compilePixelMatrix(PLANE_MATRIX, p.palette, 2.6);
+    }
+    this.planeSprite = this.planeSprites.CLASSIC;
     this.xatruchSprite = compilePixelMatrix(XATRUCH_MATRIX, XATRUCH_PALETTE, 1.75);
     this.citizenSprites = {};
 
@@ -172,7 +176,8 @@ export class SpriteLibrary {
     }
   }
 
-  drawPlane(ctx, plane, propellerPhase, time) {
+  drawPlane(ctx, plane, propellerPhase, time, planeId = 'CLASSIC') {
+    const activeSprite = this.planeSprites[planeId] || this.planeSprite;
     ctx.save();
     ctx.translate(plane.x, plane.y);
     ctx.rotate(plane.tilt);
@@ -188,7 +193,7 @@ export class SpriteLibrary {
     ctx.drawImage(this.xatruchSprite, 30, -18);
 
     // Sprite principal del avión
-    ctx.drawImage(this.planeSprite, 0, 0);
+    ctx.drawImage(activeSprite, 0, 0);
 
     // Compuerta de carga abierta si acaba de soltar
     if (plane.hatchOpenTimer > 0) {
@@ -199,7 +204,7 @@ export class SpriteLibrary {
     }
 
     // Hélice frontal giratoria con desenfoque
-    const propX = this.planeSprite.width - 2;
+    const propX = activeSprite.width - 2;
     const propY = 16;
     const propH = Math.abs(Math.sin(propellerPhase)) * 16 + 2;
     ctx.fillStyle = 'rgba(226, 232, 240, 0.85)';
@@ -207,6 +212,113 @@ export class SpriteLibrary {
     ctx.fillStyle = '#ef4444';
     ctx.fillRect(propX - 1, propY - 2, 3, 4);
 
+    ctx.restore();
+  }
+
+  /**
+   * Guacamaya Roja (Guara Roja) volando con alas animadas 16-bit
+   */
+  drawMacaw(ctx, obs) {
+    const x = obs.x;
+    const y = obs.y;
+    const flap = Math.sin(obs.wingPhase || 0) * 8;
+
+    ctx.save();
+    // Cola larga roja y azul
+    ctx.fillStyle = '#dc2626';
+    ctx.fillRect(x + 22, y + 10, 14, 4);
+    ctx.fillStyle = '#0284c7';
+    ctx.fillRect(x + 26, y + 14, 10, 3);
+    // Cuerpo rojo escarlata con contorno oscuro
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(x + 4, y + 5, 22, 14);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(x + 6, y + 7, 18, 10);
+    // Ala amarilla y azul aleteando
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(x + 10, y + 6 - Math.max(0, flap), 10, 6);
+    ctx.fillStyle = '#0284c7';
+    ctx.fillRect(x + 12, y + 2 - Math.max(0, flap), 8, 4);
+    // Cara blanca y pico curvo
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x + 5, y + 8, 5, 5);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(x + 6, y + 9, 2, 2);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(x + 1, y + 9, 4, 5);
+    ctx.restore();
+  }
+
+  /**
+   * Venado Cola Blanca (mamífero nacional de Honduras)
+   */
+  drawDeer(ctx, obs) {
+    const x = obs.x;
+    const y = obs.y;
+    ctx.save();
+    // Patas delgadas con contorno
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(x + 8, y + 20, 4, 16);
+    ctx.fillRect(x + 15, y + 20, 4, 16);
+    ctx.fillRect(x + 27, y + 20, 4, 16);
+    ctx.fillRect(x + 34, y + 20, 4, 16);
+    // Cuerpo café claro
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(x + 6, y + 10, 32, 14);
+    ctx.fillStyle = '#b45309';
+    ctx.fillRect(x + 8, y + 12, 28, 10);
+    // Cola blanca levantada distintiva
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x + 36, y + 6, 6, 7);
+    // Cuello y cabeza mirando a la izquierda
+    ctx.fillStyle = '#b45309';
+    ctx.fillRect(x + 5, y + 4, 8, 10);
+    ctx.fillRect(x + 1, y + 4, 9, 7);
+    // Ojo y nariz
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(x + 4, y + 6, 2, 2);
+    ctx.fillRect(x + 1, y + 8, 2, 2);
+    // Cornamenta (astas)
+    ctx.fillStyle = '#fde68a';
+    ctx.fillRect(x + 8, y - 4, 2, 8);
+    ctx.fillRect(x + 11, y - 3, 2, 7);
+    ctx.fillRect(x + 6, y - 2, 6, 2);
+    ctx.restore();
+  }
+
+  /**
+   * Marero en la calle (obstáculo urbano con pañoleta, lentes oscuros y camiseta)
+   */
+  drawGangster(ctx, obs) {
+    const x = obs.x;
+    const y = obs.y;
+    ctx.save();
+    // Pantalón ancho oscuro y tenis
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(x + 5, y + 24, 7, 16);
+    ctx.fillRect(x + 14, y + 24, 7, 16);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x + 4, y + 37, 8, 3);
+    ctx.fillRect(x + 14, y + 37, 8, 3);
+    // Camiseta blanca sin mangas + tatuajes en brazos
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(x + 6, y + 12, 14, 13);
+    ctx.fillStyle = '#d99b66';
+    ctx.fillRect(x + 2, y + 13, 4, 10);
+    ctx.fillRect(x + 20, y + 13, 4, 10);
+    ctx.fillStyle = '#0f172a'; // Tatuajes pixelados
+    ctx.fillRect(x + 3, y + 16, 2, 4);
+    ctx.fillRect(x + 21, y + 15, 2, 5);
+    // Cabeza, gorra hacia atrás y pañoleta / lentes oscuros
+    ctx.fillStyle = '#d99b66';
+    ctx.fillRect(x + 7, y + 2, 12, 10);
+    ctx.fillStyle = '#0f172a'; // Lentes oscuros
+    ctx.fillRect(x + 7, y + 5, 10, 3);
+    ctx.fillStyle = '#dc2626'; // Pañoleta / bandana roja
+    ctx.fillRect(x + 7, y + 8, 12, 4);
+    ctx.fillStyle = '#1e293b'; // Gorra hacia atrás
+    ctx.fillRect(x + 7, y, 12, 4);
+    ctx.fillRect(x + 17, y + 2, 5, 2);
     ctx.restore();
   }
 

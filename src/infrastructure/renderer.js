@@ -49,16 +49,18 @@ export class CanvasRenderer {
 
     ctx.clearRect(0, 0, w, h);
 
-    if (gameState.mode === GAME_MODES.HIGHWAY) {
+    const effMode = gameState.getEffectiveMode ? gameState.getEffectiveMode() : gameState.mode;
+
+    if (effMode === GAME_MODES.HIGHWAY) {
       this.renderHighwayWorld(ctx, w, h, gameState);
       this.renderSpeedLines(ctx, w, h, gameState.plane.speed);
       this.renderParticles(ctx, gameState.dropEngine.particles);
       this.renderFloatingTexts(ctx, gameState.dropEngine.floatingTexts);
     } else {
       const currentBiome = gameState.getBiomeAtX(gameState.plane.x);
-      this.renderSky(ctx, w, h, currentBiome, gameState.mode);
-      this.renderFarMountains(ctx, w, h, gameState.mode);
-      this.renderClouds(ctx, w, h, gameState.mode);
+      this.renderSky(ctx, w, h, currentBiome, effMode);
+      this.renderFarMountains(ctx, w, h, effMode);
+      this.renderClouds(ctx, w, h, effMode);
 
       // Suelo, Landmarks de Honduras y Edificios
       this.renderWorldChunks(ctx, gameState);
@@ -69,26 +71,32 @@ export class CanvasRenderer {
         this.renderPredictiveReticle(ctx, gameState);
       }
 
-      if (gameState.mode === GAME_MODES.GEOMETRY) {
+      if (effMode === GAME_MODES.GEOMETRY) {
         this.renderGeometrySlots(ctx, gameState);
       } else {
         this.renderCitizens(ctx, gameState);
       }
 
       // Objetos rodando en el suelo
-      this.renderRollingItems(ctx, gameState.dropEngine.rollingItems, gameState.mode);
+      this.renderRollingItems(ctx, gameState.dropEngine.rollingItems, effMode);
 
       // Partículas de impacto
       this.renderParticles(ctx, gameState.dropEngine.particles);
 
       // Objetos cayendo
-      this.renderActiveDrops(ctx, gameState.dropEngine.activeDrops, gameState.mode);
+      this.renderActiveDrops(ctx, gameState.dropEngine.activeDrops, effMode);
 
       // Humo del avión
       this.renderSmoke(ctx, gameState.smokeTrail);
 
       // El Avión con General Xatruch
-      this.sprites.drawPlane(ctx, gameState.plane, this.propellerAngle, this.elapsedTime);
+      this.sprites.drawPlane(
+        ctx,
+        gameState.plane,
+        this.propellerAngle,
+        this.elapsedTime,
+        gameState.selectedPlaneId
+      );
 
       // Textos flotantes
       this.renderFloatingTexts(ctx, gameState.dropEngine.floatingTexts);
@@ -103,6 +111,8 @@ export class CanvasRenderer {
     // Pantallas de Estado
     if (gameState.status === GAME_STATUS.START) {
       this.renderStartScreen(ctx, w, h, gameState);
+    } else if (gameState.status === GAME_STATUS.RESCUE_PROMPT) {
+      this.renderRescuePromptScreen(ctx, w, h, gameState);
     } else if (gameState.status === GAME_STATUS.LEVEL_COMPLETE) {
       this.renderLevelCompleteScreen(ctx, w, h, gameState);
     } else if (gameState.status === GAME_STATUS.VICTORY) {
@@ -256,6 +266,12 @@ export class CanvasRenderer {
         ctx.fillRect(obs.x + 5, obs.y, 8, obs.height);
         ctx.fillStyle = '#475569';
         ctx.fillRect(obs.x - 4, obs.y + 8, 26, 4);
+      } else if (obs.type === 'MACAW') {
+        this.sprites.drawMacaw(ctx, obs);
+      } else if (obs.type === 'DEER') {
+        this.sprites.drawDeer(ctx, obs);
+      } else if (obs.type === 'GANGSTER') {
+        this.sprites.drawGangster(ctx, obs);
       }
     }
 
@@ -739,8 +755,9 @@ export class CanvasRenderer {
 
     let isTargetLocked = false;
     let isPerfectLock = false;
+    const effMode = gameState.getEffectiveMode ? gameState.getEffectiveMode() : gameState.mode;
 
-    if (gameState.mode === GAME_MODES.GEOMETRY) {
+    if (effMode === GAME_MODES.GEOMETRY) {
       for (const slot of gameState.geometrySlots) {
         if (!slot.filled && slot.shapeType === itemId) {
           const dist = Math.abs(slot.x - landingX);
@@ -969,7 +986,9 @@ export class CanvasRenderer {
     ctx.fillStyle = '#38bdf8';
     ctx.fillRect(0, hudHeight - 2, w, 2);
 
-    if (gameState.mode === GAME_MODES.HIGHWAY) {
+    const effMode = gameState.getEffectiveMode ? gameState.getEffectiveMode() : gameState.mode;
+
+    if (effMode === GAME_MODES.HIGHWAY) {
       const hw = gameState.highwayEngine;
       ctx.font = `bold ${isMobile ? 11 : 13}px "JetBrains Mono", monospace`;
       ctx.fillStyle = '#f43f5e';
@@ -985,12 +1004,21 @@ export class CanvasRenderer {
       const spd = Math.round(gameState.plane.speed);
       ctx.textAlign = 'center';
       ctx.font = `bold ${isMobile ? 10 : 12}px "JetBrains Mono", monospace`;
-      ctx.fillStyle = '#38bdf8';
-      ctx.fillText(
-        isMobile ? '🏃 SALTO EN CARRETERA' : '🏃 SALTO EN CARRETERA • [ESPACIO] SALTAR / DOBLE SALTO',
-        w / 2,
-        isMobile ? 38 : 18
-      );
+      if (gameState.isRescueActive) {
+        ctx.fillStyle = '#4ade80';
+        ctx.fillText(
+          `🚑 RESCATE: ${hw.rescueCollected}/${hw.rescueGoal} SUMINISTROS`,
+          w / 2,
+          isMobile ? 38 : 18
+        );
+      } else {
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(
+          isMobile ? '🏃 SALTO EN CARRETERA' : '🏃 SALTO EN CARRETERA • [ESPACIO] SALTAR / DOBLE SALTO',
+          w / 2,
+          isMobile ? 38 : 18
+        );
+      }
 
       ctx.font = '10px "JetBrains Mono", monospace';
       ctx.fillStyle = spd > 320 ? '#ef4444' : spd > 240 ? '#facc15' : '#94a3b8';
@@ -1089,7 +1117,8 @@ export class CanvasRenderer {
       ctx.fillStyle = isSelected ? '#0f172a' : '#334155';
       ctx.fillRect(x, y, slotSize, slotSize);
 
-      if (gameState.mode === GAME_MODES.GEOMETRY) {
+      const effMode = gameState.getEffectiveMode ? gameState.getEffectiveMode() : gameState.mode;
+      if (effMode === GAME_MODES.GEOMETRY) {
         this.sprites.drawGeoShape(ctx, itemId, x + slotSize / 2, y + slotSize / 2 - 5, 11, itemConfig.color, false);
       } else {
         ctx.font = isSelected ? '20px sans-serif' : '16px sans-serif';
@@ -1110,106 +1139,65 @@ export class CanvasRenderer {
     ctx.fillRect(0, 0, w, h);
 
     const isMobile = w < 680;
+    const planeCfg = gameState.getSelectedPlaneConfig();
 
     ctx.fillStyle = '#38bdf8';
-    ctx.font = `bold ${isMobile ? 19 : 26}px "JetBrains Mono", monospace`;
+    ctx.font = `bold ${isMobile ? 18 : 25}px "JetBrains Mono", monospace`;
     ctx.textAlign = 'center';
-    ctx.fillText('✈️ XATRUCH JOY BOMBER', w / 2, isMobile ? 38 : h / 2 - 135);
+    ctx.fillText('✈️ XATRUCH JOY BOMBER', w / 2, isMobile ? 32 : h / 2 - 148);
 
-    ctx.fillStyle = '#cbd5e1';
-    ctx.font = `${isMobile ? 12 : 13}px "Inter", sans-serif`;
-    ctx.fillText('Elige un modo de juego:', w / 2, isMobile ? 58 : h / 2 - 102);
+    ctx.fillStyle = '#facc15';
+    ctx.font = `bold ${isMobile ? 10 : 12}px "JetBrains Mono", monospace`;
+    ctx.fillText(
+      `⭐ ${gameState.totalStars}/12 ESTRELLAS  •  AVIÓN: ${planeCfg.name.toUpperCase()}`,
+      w / 2,
+      isMobile ? 50 : h / 2 - 122
+    );
 
     if (isMobile) {
       const cardW = Math.min(340, w - 28);
-      const topY = 74;
-      const bottomPad = 28;
-      const gap = 10;
-      const availH = Math.max(240, h - topY - bottomPad);
-      const cardH = Math.min(108, Math.floor((availH - gap * 2) / 3));
+      const topY = 62;
+      const bottomPad = 14;
+      const gap = 8;
+      const availH = Math.max(220, h - topY - bottomPad);
+      const cardH = Math.min(82, Math.floor((availH - gap * 3) / 4));
       const startX = (w - cardW) / 2;
 
       this.startModeButtons = [
-        { mode: GAME_MODES.CITY, x: startX, y: topY, w: cardW, h: cardH },
-        { mode: GAME_MODES.GEOMETRY, x: startX, y: topY + cardH + gap, w: cardW, h: cardH },
-        { mode: GAME_MODES.HIGHWAY, x: startX, y: topY + (cardH + gap) * 2, w: cardW, h: cardH }
+        { mode: GAME_MODES.STORY, x: startX, y: topY, w: cardW, h: cardH },
+        { mode: GAME_MODES.CITY, x: startX, y: topY + cardH + gap, w: cardW, h: cardH },
+        { mode: GAME_MODES.GEOMETRY, x: startX, y: topY + (cardH + gap) * 2, w: cardW, h: cardH },
+        { mode: GAME_MODES.HIGHWAY, x: startX, y: topY + (cardH + gap) * 3, w: cardW, h: cardH }
       ];
 
-      this.drawModeCardCompact(
-        ctx,
-        this.startModeButtons[0],
-        '🏙️ MODO CIUDAD',
-        'Tegucigalpa & SPS • Meta: 8,500 pts',
-        'TOCA PARA VOLAR',
-        '#38bdf8'
-      );
-      this.drawModeCardCompact(
-        ctx,
-        this.startModeButtons[1],
-        '📐 MODO GEOMETRÍA',
-        'Figuras de precisión • Meta: 5,500 pts',
-        'TOCA PARA JUGAR',
-        '#a855f7'
-      );
-      this.drawModeCardCompact(
-        ctx,
-        this.startModeButtons[2],
-        '🏃 SALTO EN CARRETERA',
-        'Salta obstáculos con doble salto',
-        'TOCA PARA CORRER',
-        '#f97316'
-      );
+      this.drawModeCardCompact(ctx, this.startModeButtons[0], '📖 MODO HISTORIA', 'Ciudades → Geometría + Rescate', 'TOCA PARA CAMPAÑA', '#facc15');
+      this.drawModeCardCompact(ctx, this.startModeButtons[1], '🏙️ CIUDAD LIBRE', 'Tegucigalpa & SPS • 5 cargas', 'TOCA PARA VOLAR', '#38bdf8');
+      this.drawModeCardCompact(ctx, this.startModeButtons[2], '📐 GEOMETRÍA', 'Figuras de precisión arcade', 'TOCA PARA JUGAR', '#a855f7');
+      this.drawModeCardCompact(ctx, this.startModeButtons[3], '🏃 EN CARRETERA', 'Guacamayas, Venados & Mareros', 'TOCA PARA CORRER', '#f97316');
       return;
     }
 
-    const gap = 18;
-    const cardW = Math.min(240, Math.floor((w - 60 - gap * 2) / 3));
+    const gap = 14;
+    const cardW = Math.min(200, Math.floor((w - 60 - gap * 3) / 4));
     const cardH = 160;
-    const startX = (w - (cardW * 3 + gap * 2)) / 2;
-    const cardY = h / 2 - 72;
+    const startX = (w - (cardW * 4 + gap * 3)) / 2;
+    const cardY = h / 2 - 86;
 
     this.startModeButtons = [
-      { mode: GAME_MODES.CITY, x: startX, y: cardY, w: cardW, h: cardH },
-      { mode: GAME_MODES.GEOMETRY, x: startX + cardW + gap, y: cardY, w: cardW, h: cardH },
-      { mode: GAME_MODES.HIGHWAY, x: startX + (cardW + gap) * 2, y: cardY, w: cardW, h: cardH }
+      { mode: GAME_MODES.STORY, x: startX, y: cardY, w: cardW, h: cardH },
+      { mode: GAME_MODES.CITY, x: startX + cardW + gap, y: cardY, w: cardW, h: cardH },
+      { mode: GAME_MODES.GEOMETRY, x: startX + (cardW + gap) * 2, y: cardY, w: cardW, h: cardH },
+      { mode: GAME_MODES.HIGHWAY, x: startX + (cardW + gap) * 3, y: cardY, w: cardW, h: cardH }
     ];
 
-    this.drawModeCard(
-      ctx,
-      this.startModeButtons[0],
-      '🏙️ MODO CIUDAD',
-      'Tegucigalpa & SPS',
-      'Apunta a la gente y fuegos.',
-      'Meta: 8,500 pts + Joy ≥ 65%',
-      '[1] JUGAR CIUDAD',
-      '#38bdf8'
-    );
-
-    this.drawModeCard(
-      ctx,
-      this.startModeButtons[1],
-      '📐 GEOMETRÍA',
-      'Básicas & Complejas',
-      'Encaja figuras con precisión.',
-      'Meta: 5,500 pts + Joy ≥ 55%',
-      '[2] JUGAR FIGURAS',
-      '#a855f7'
-    );
-
-    this.drawModeCard(
-      ctx,
-      this.startModeButtons[2],
-      '🏃 EN CARRETERA',
-      'Vista de Ventana',
-      'Salta postes y carros con',
-      '[ESPACIO] (Doble Salto!).',
-      '[3] JUGAR CARRETERA',
-      '#f97316'
-    );
+    this.drawModeCard(ctx, this.startModeButtons[0], '📖 HISTORIA', '4 Capítulos', 'Ciudades → Geometría', '¡Incluye Rescate!', '[1] CAMPAÑA', '#facc15');
+    this.drawModeCard(ctx, this.startModeButtons[1], '🏙️ CIUDAD', 'TGU & SPS', 'Apunta a la gente,', 'fuegos y laderas.', '[2] VOLAR', '#38bdf8');
+    this.drawModeCard(ctx, this.startModeButtons[2], '📐 FIGURAS', 'Precisión', 'Encaja piezas en', 'bases neón.', '[3] JUGAR', '#a855f7');
+    this.drawModeCard(ctx, this.startModeButtons[3], '🏃 CARRETERA', 'Tegucigalpa', 'Guacamayas, venados', 'y mareros.', '[4] CORRER', '#f97316');
 
     ctx.fillStyle = '#94a3b8';
     ctx.font = '11px "JetBrains Mono", monospace';
-    ctx.fillText('Presiona [1], [2], [3] o haz clic en una tarjeta para iniciar', w / 2, cardY + cardH + 40);
+    ctx.fillText('Presiona [1]-[4] o clic en tarjeta • Usa "✈️ Hangar" arriba para cambiar de avión', w / 2, cardY + cardH + 36);
   }
 
   drawModeCardCompact(ctx, box, title, subtitle, cta, accent) {
@@ -1269,30 +1257,55 @@ export class CanvasRenderer {
     ctx.fillText(cta, cx, box.y + 136);
   }
 
+  renderRescuePromptScreen(ctx, w, h, gameState) {
+    ctx.fillStyle = 'rgba(9, 13, 22, 0.92)';
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.fillStyle = '#f97316';
+    ctx.font = 'bold 22px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('🆘 ¡ATERRIZAJE DE EMERGENCIA!', w / 2, h / 2 - 65);
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = '13px "Inter", sans-serif';
+    ctx.fillText('El Joy-O-Meter cayó a 0%, pero tienes una segunda oportunidad:', w / 2, h / 2 - 28);
+
+    ctx.fillStyle = '#4ade80';
+    ctx.font = 'bold 14px "JetBrains Mono", monospace';
+    ctx.fillText('🏃 MISIÓN DE RESCATE EN CARRETERA', w / 2, h / 2 + 8);
+
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '12px "Inter", sans-serif';
+    ctx.fillText('Recoge 8 suministros esquivando guacamayas, venados y mareros', w / 2, h / 2 + 34);
+    ctx.fillText('para recargar 50% de Joy y continuar donde quedaste.', w / 2, h / 2 + 52);
+
+    ctx.fillStyle = '#facc15';
+    ctx.font = 'bold 14px "JetBrains Mono", monospace';
+    ctx.fillText('▶ TOCA O PRESIONA [ESPACIO] PARA CORRER EL RESCATE', w / 2, h / 2 + 95);
+  }
+
   renderLevelCompleteScreen(ctx, w, h, gameState) {
     ctx.fillStyle = 'rgba(9, 13, 22, 0.92)';
     ctx.fillRect(0, 0, w, h);
 
-    const nextCfg = gameState.mode === GAME_MODES.CITY
-      ? 'San Pedro Sula (Merendón, Olímpico, Los Bordos)'
-      : 'Figuras Complejas (Hexágono, Rombo, Cruz, Luna)';
+    const levelCfg = gameState.getCurrentLevelConfig();
+    const starsStr = '⭐'.repeat(gameState.lastEarnedStars) + '☆'.repeat(Math.max(0, 3 - gameState.lastEarnedStars));
 
     ctx.fillStyle = '#4ade80';
-    ctx.font = 'bold 26px "JetBrains Mono", monospace';
+    ctx.font = 'bold 24px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('🎉 ¡NIVEL 1 COMPLETADO!', w / 2, h / 2 - 60);
+    ctx.fillText(`🎉 ¡${levelCfg.title.toUpperCase()} COMPLETADO!`, w / 2, h / 2 - 70);
 
-    ctx.fillStyle = '#f8fafc';
-    ctx.font = '14px "Inter", sans-serif';
-    ctx.fillText(`Siguiente destino: ${nextCfg}`, w / 2, h / 2 - 20);
+    ctx.font = '26px sans-serif';
+    ctx.fillText(starsStr, w / 2, h / 2 - 28);
 
     ctx.fillStyle = '#fbbf24';
     ctx.font = 'bold 18px "JetBrains Mono", monospace';
-    ctx.fillText(`SCORE ACTUAL: ${gameState.dropEngine.scorer.score}`, w / 2, h / 2 + 20);
+    ctx.fillText(`SCORE: ${gameState.dropEngine.scorer.score}  |  ESTRELLAS TOTALES: ⭐ ${gameState.totalStars}`, w / 2, h / 2 + 16);
 
     ctx.fillStyle = '#38bdf8';
     ctx.font = 'bold 14px "JetBrains Mono", monospace';
-    ctx.fillText('▶ PRESIONA [ESPACIO] O TOCA PARA DESPEGAR AL NIVEL 2', w / 2, h / 2 + 75);
+    ctx.fillText('▶ PRESIONA [ESPACIO] O TOCA PARA EL SIGUIENTE CAPÍTULO', w / 2, h / 2 + 72);
   }
 
   renderVictoryScreen(ctx, w, h, gameState) {

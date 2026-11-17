@@ -44,8 +44,9 @@ export class DropEngine {
 
       if (p.y >= groundY) {
         p.active = false;
+        const effectiveMode = gameState.getEffectiveMode ? gameState.getEffectiveMode() : gameState.mode;
 
-        if (gameState.mode === GAME_MODES.GEOMETRY) {
+        if (effectiveMode === GAME_MODES.GEOMETRY) {
           this.handleGeometryImpact(p, groundY, gameState);
         } else {
           this.handleCityImpact(p, groundY, gameState);
@@ -90,7 +91,8 @@ export class DropEngine {
     }
 
     // 5. Decaimiento leve de alegría (más suave en modo Geometría)
-    const decayRate = gameState.mode === GAME_MODES.GEOMETRY ? 0.55 : 1.1;
+    const effectiveMode = gameState.getEffectiveMode ? gameState.getEffectiveMode() : gameState.mode;
+    const decayRate = effectiveMode === GAME_MODES.GEOMETRY ? 0.55 : 1.1;
     this.scorer.decayJoy(dt, decayRate);
   }
 

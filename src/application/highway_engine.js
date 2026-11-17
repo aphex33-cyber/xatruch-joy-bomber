@@ -35,6 +35,9 @@ export class HighwayEngine {
 
     this.lives = 3;
     this.maxLives = 3;
+    this.isRescueMode = false;
+    this.rescueGoal = 8;
+    this.rescueCollected = 0;
     this.obstacles = [];
     this.stars = [];
     this.landmarks = [];
@@ -48,10 +51,12 @@ export class HighwayEngine {
     this.onJump = null;
   }
 
-  reset(canvasWidth, canvasHeight) {
+  reset(canvasWidth, canvasHeight, isRescueMode = false) {
     this.canvasWidth = canvasWidth;
     this.canvasHeight = canvasHeight;
     this.groundY = canvasHeight - 64;
+    this.isRescueMode = isRescueMode;
+    this.rescueCollected = 0;
 
     this.runner.y = this.groundY;
     this.runner.vy = 0;
@@ -85,46 +90,69 @@ export class HighwayEngine {
   }
 
   spawnObstaclePattern(speed) {
-    const types = ['BUSH', 'SIGN', 'FENCE', 'CAR', 'POLE'];
+    const types = ['BUSH', 'SIGN', 'FENCE', 'CAR', 'POLE', 'MACAW', 'DEER', 'GANGSTER'];
     const type = types[Math.floor(Math.random() * types.length)];
 
     let width = 30;
     let height = 34;
+    let y = this.groundY - height;
 
     if (type === 'BUSH') {
       width = 36;
       height = 28;
+      y = this.groundY - height;
     } else if (type === 'SIGN') {
       width = 22;
       height = 46;
+      y = this.groundY - height;
     } else if (type === 'FENCE') {
       width = 48;
       height = 36;
+      y = this.groundY - height;
     } else if (type === 'CAR') {
       width = 66;
       height = 34;
+      y = this.groundY - height;
     } else if (type === 'POLE') {
       width = 18;
-      height = 84; // Alto: ideal para doble salto
+      height = 84;
+      y = this.groundY - height;
+    } else if (type === 'MACAW') {
+      width = 34;
+      height = 24;
+      y = this.groundY - (74 + Math.random() * 24); // Vuela a media altura
+    } else if (type === 'DEER') {
+      width = 44;
+      height = 36;
+      y = this.groundY - height;
+    } else if (type === 'GANGSTER') {
+      width = 26;
+      height = 40;
+      y = this.groundY - height;
     }
 
     const spawnX = this.canvasWidth + 60;
     this.obstacles.push({
       x: spawnX,
-      y: this.groundY - height,
+      y,
       width,
       height,
       type,
+      wingPhase: Math.random() * Math.PI * 2,
       passed: false
     });
 
-    // 75% de probabilidad de generar un suministro del modo ciudad sobre el obstáculo
-    if (Math.random() < 0.75) {
+    // En modo rescate siempre aparece suministro para poder salvarse; en normal 75%
+    if (this.isRescueMode || Math.random() < 0.75) {
       const itemId = HIGHWAY_COLLECTIBLES[Math.floor(Math.random() * HIGHWAY_COLLECTIBLES.length)];
       const itemCfg = ITEMS_CATALOG[itemId];
+      const itemY =
+        type === 'MACAW'
+          ? this.groundY - 26 // Por debajo de la guacamaya
+          : this.groundY - height - (type === 'POLE' ? 42 : 48);
       this.stars.push({
         x: spawnX + width / 2,
-        y: this.groundY - height - (type === 'POLE' ? 42 : 48),
+        y: itemY,
         radius: 13,
         item: itemCfg,
         collected: false
@@ -186,7 +214,9 @@ export class HighwayEngine {
 
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
       const obs = this.obstacles[i];
-      obs.x -= speed * dt;
+      const obsSpeed = obs.type === 'MACAW' ? speed * 1.18 : speed;
+      obs.x -= obsSpeed * dt;
+      obs.wingPhase += dt * 14;
 
       // Puntos al superar obstáculo
       if (!obs.passed && obs.x + obs.width < this.runner.x) {
@@ -238,6 +268,9 @@ export class HighwayEngine {
         const dy = (this.runner.y - this.runner.height / 2) - st.y;
         if (Math.hypot(dx, dy) < 28) {
           st.collected = true;
+          if (this.isRescueMode) {
+            this.rescueCollected++;
+          }
           scorer.combo++;
           if (scorer.combo > scorer.maxCombo) scorer.maxCombo = scorer.combo;
           const pts = 100 + Math.min(scorer.combo * 15, 150);
@@ -270,6 +303,9 @@ export class HighwayEngine {
     scorer.score += Math.round(speed * dt * 0.08);
     scorer.joy = Math.max(0, Math.round((this.lives / this.maxLives) * 100));
 
-    return this.lives <= 0;
+    if (this.isRescueMode && this.rescueCollected >= this.rescueGoal) {
+      return 'RESCUED';
+    }
+    return this.lives <= 0 ? 'DEAD' : 'ALIVE';
   }
 }

@@ -3,14 +3,36 @@
  * Efectos de sonido chiptune 8-bit generados en tiempo real sin archivos externos
  */
 
+const MUSIC_TRACKS = {
+  CITY_1: 'assets/music.mp3',
+  CITY_2: 'assets/felt_and_fury.mp3',
+  GEOMETRY: 'assets/vaa_thos_koor.mp3',
+  HIGHWAY: 'assets/hammers_and_tapes.mp3'
+};
+
 export class RetroAudioSynth {
   constructor() {
     this.ctx = null;
     this.muted = false;
-    this.bgm = new Audio('assets/music.mp3');
-    this.bgm.loop = true;
+    this.currentTrackSrc = MUSIC_TRACKS.CITY_1;
+    this.currentMode = 'CITY';
+    this.cityTrackIndex = 0;
+    this.bgm = new Audio(this.currentTrackSrc);
+    this.bgm.loop = false;
     this.bgm.volume = 0.42;
     this.bgmStarted = false;
+
+    // Al terminar un track: en Ciudad alterna entre music.mp3 y felt_and_fury.mp3; en otros modos repite
+    this.bgm.addEventListener('ended', () => {
+      if (this.currentMode === 'CITY') {
+        this.cityTrackIndex = (this.cityTrackIndex + 1) % 2;
+        const nextSrc = this.cityTrackIndex === 0 ? MUSIC_TRACKS.CITY_1 : MUSIC_TRACKS.CITY_2;
+        this.playTrack(nextSrc, true);
+      } else {
+        this.bgm.currentTime = 0;
+        if (!this.muted) this.bgm.play().catch(() => {});
+      }
+    });
   }
 
   ensureContext() {
@@ -26,13 +48,42 @@ export class RetroAudioSynth {
     this.startMusic();
   }
 
+  playTrack(src, forceRestart = false) {
+    if (!forceRestart && this.currentTrackSrc === src) {
+      this.startMusic();
+      return;
+    }
+    this.currentTrackSrc = src;
+    this.bgm.src = src;
+    this.bgm.currentTime = 0;
+    if (!this.muted && this.bgmStarted) {
+      this.bgm.play().catch(() => {});
+    }
+  }
+
+  setMusicForMode(effectiveMode, levelIndex = 0) {
+    this.currentMode = effectiveMode;
+    if (effectiveMode === 'GEOMETRY') {
+      this.playTrack(MUSIC_TRACKS.GEOMETRY);
+    } else if (effectiveMode === 'HIGHWAY') {
+      this.playTrack(MUSIC_TRACKS.HIGHWAY);
+    } else {
+      // Modo Ciudad: alterna entre el track actual y Felt and Fury (por nivel y al terminar cada pista)
+      this.cityTrackIndex = levelIndex % 2;
+      const target = this.cityTrackIndex === 0 ? MUSIC_TRACKS.CITY_1 : MUSIC_TRACKS.CITY_2;
+      this.playTrack(target);
+    }
+  }
+
   startMusic() {
-    if (this.muted || this.bgmStarted) return;
-    this.bgm.play().then(() => {
-      this.bgmStarted = true;
-    }).catch(() => {
-      // El navegador aún requiere interacción del usuario
-    });
+    if (this.muted) return;
+    if (!this.bgmStarted || this.bgm.paused) {
+      this.bgm.play().then(() => {
+        this.bgmStarted = true;
+      }).catch(() => {
+        // El navegador aún requiere interacción del usuario
+      });
+    }
   }
 
   toggleMute() {

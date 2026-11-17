@@ -111,6 +111,8 @@ window.addEventListener('DOMContentLoaded', () => {
       const diffCfg = gameState.getDifficultyConfig();
       btnDifficulty.textContent = `🎚️ ${diffCfg.label}`;
     }
+    const effMode = gameState.getEffectiveMode ? gameState.getEffectiveMode() : gameState.mode;
+    audio.setMusicForMode(effMode, gameState.levelIndex);
   };
   syncModeButtonLabel();
 
@@ -291,7 +293,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const dt = Math.min((currentTime - lastTime) / 1000, 0.1);
     lastTime = currentTime;
 
+    const wasRescue = gameState.isRescueActive;
     gameState.update(dt, inputHandler.state);
+    if (wasRescue && !gameState.isRescueActive) {
+      syncModeButtonLabel();
+    }
     renderer.render(gameState, dt);
 
     requestAnimationFrame(loop);

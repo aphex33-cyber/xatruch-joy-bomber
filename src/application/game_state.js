@@ -11,6 +11,7 @@ import {
   STORY_STAGES
 } from '../domain/types.js';
 import { HighScoreStore, ProgressStore, calculateStars } from '../domain/score.js';
+import { t, getLang } from '../domain/i18n.js';
 import { DropEngine } from './drop_engine.js';
 import { HighwayEngine } from './highway_engine.js';
 import { BossEngine } from './boss_engine.js';
@@ -260,14 +261,17 @@ export class GameState {
       return {
         ...baseCfg,
         targetScore: Math.round(baseCfg.targetScore * diffCfg.scoreMultiplier),
-        title: st.title,
-        subtitle: st.subtitle
+        title: t(`story.${st.stageIndex}.title`),
+        subtitle: t(`story.${st.stageIndex}.sub`)
       };
     }
     const list = LEVELS_CONFIG[this.mode] || LEVELS_CONFIG[GAME_MODES.CITY];
-    const baseCfg = list[Math.min(this.levelIndex, list.length - 1)];
+    const idx = Math.min(this.levelIndex, list.length - 1);
+    const baseCfg = list[idx];
     return {
       ...baseCfg,
+      title: t(`level.${this.mode}.${idx}.title`),
+      subtitle: t(`level.${this.mode}.${idx}.sub`),
       targetScore: Math.round(baseCfg.targetScore * diffCfg.scoreMultiplier)
     };
   }
@@ -759,8 +763,8 @@ export class GameState {
         this.dropEngine.floatingTexts.push({
           x: this.plane.x + 80,
           y: this.plane.y + 45,
-          text: '✈️ ¡RESCATE EXITOSO!',
-          subtext: '+55% JOY RECUPERADA',
+          text: t('rescue.success'),
+          subtext: getLang() === 'en' ? '+55% JOY RECOVERED' : '+55% JOY RECUPERADA',
           color: '#4ade80',
           life: 2.5,
           maxLife: 2.5,

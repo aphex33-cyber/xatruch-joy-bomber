@@ -1,8 +1,10 @@
 import { GameState, GAME_STATUS } from './application/game_state.js';
 import { GAME_MODES } from './domain/types.js';
+import { t, getLang, toggleLang } from './domain/i18n.js';
 import { CanvasRenderer } from './infrastructure/renderer.js';
 import { RetroAudioSynth } from './infrastructure/audio_synth.js';
 import { InputHandler } from './infrastructure/input.js';
+import { crazyGames } from './infrastructure/crazygames_sdk.js';
 
 window.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('gameCanvas');
@@ -10,6 +12,7 @@ window.addEventListener('DOMContentLoaded', () => {
   renderer.resize();
 
   const audio = new RetroAudioSynth();
+  crazyGames.init();
   const gameState = new GameState(canvas.width, canvas.height);
   gameState.onResize(canvas.width, canvas.height);
 
@@ -23,6 +26,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnDifficulty = document.getElementById('btnDifficulty');
   const btnHangar = document.getElementById('btnHangar');
   const btnFullscreen = document.getElementById('btnFullscreen');
+  const btnLang = document.getElementById('btnLang');
   const gameContainer = document.querySelector('.game-container');
 
   const isMobileDevice = () =>
@@ -92,26 +96,34 @@ window.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('resize', syncCanvasSize);
 
   const syncModeButtonLabel = () => {
+    if (btnMenu) btnMenu.textContent = t('ui.menu');
+    if (btnPause) btnPause.textContent = gameState.status === GAME_STATUS.PAUSED ? t('ui.resume') : t('ui.pause');
+    if (btnFullscreen) btnFullscreen.textContent = t('ui.fullscreen');
+    if (btnMute) btnMute.textContent = audio.muted ? t('ui.audioOff') : t('ui.audioOn');
+    if (btnPrev) btnPrev.textContent = t('ui.prev');
+    if (btnNext) btnNext.textContent = t('ui.next');
+    if (btnLang) btnLang.textContent = getLang() === 'en' ? '🌐 EN' : '🌐 ES';
     if (btnMode) {
-      if (gameState.mode === GAME_MODES.STORY) btnMode.textContent = '📖 Modo: Historia';
-      else if (gameState.mode === GAME_MODES.CITY) btnMode.textContent = '🏙️ Modo: Ciudad';
-      else if (gameState.mode === GAME_MODES.GEOMETRY) btnMode.textContent = '📐 Modo: Geometría';
-      else btnMode.textContent = '🏃 Modo: Carretera';
+      if (gameState.mode === GAME_MODES.STORY) btnMode.textContent = t('ui.modeStory');
+      else if (gameState.mode === GAME_MODES.CITY) btnMode.textContent = t('ui.modeCity');
+      else if (gameState.mode === GAME_MODES.GEOMETRY) btnMode.textContent = t('ui.modeGeometry');
+      else btnMode.textContent = t('ui.modeHighway');
     }
     if (btnDrop) {
       const effMode = gameState.getEffectiveMode ? gameState.getEffectiveMode() : gameState.mode;
       btnDrop.textContent =
         effMode === GAME_MODES.HIGHWAY
-          ? '⬆️ SALTAR [ESPACIO]'
-          : '🚀 SOLTAR [ESPACIO]';
+          ? t('ui.jump')
+          : t('ui.drop');
     }
     if (btnHangar) {
       const planeCfg = gameState.getSelectedPlaneConfig();
-      btnHangar.textContent = `✈️ ${planeCfg.name.split(' ')[0]}`;
+      const planeName = t(`plane.${planeCfg.id}`);
+      btnHangar.textContent = `✈️ ${planeName.split(' ')[0]}`;
     }
     if (btnDifficulty) {
       const diffCfg = gameState.getDifficultyConfig();
-      btnDifficulty.textContent = `🎚️ ${diffCfg.label}`;
+      btnDifficulty.textContent = `🎚️ ${t(`diff.${diffCfg.id}`)}`;
     }
     const effMode = gameState.getEffectiveMode ? gameState.getEffectiveMode() : gameState.mode;
     audio.setMusicForMode(effMode, gameState.levelIndex);
@@ -154,16 +166,34 @@ window.addEventListener('DOMContentLoaded', () => {
       gameState.startRescueMission();
       syncModeButtonLabel();
     } else if (gameState.status === GAME_STATUS.LEVEL_COMPLETE) {
-      gameState.advanceToNextLevel();
-      syncModeButtonLabel();
+      const wasMuted = audio.muted;
+      crazyGames.requestMidgameAd({
+        onPause: () => {
+          if (!wasMuted) audio.toggleMute();
+        },
+        onResume: () => {
+          if (!wasMuted && audio.muted) audio.toggleMute();
+          gameState.advanceToNextLevel();
+          syncModeButtonLabel();
+        }
+      });
     } else if (gameState.status === GAME_STATUS.VICTORY) {
       if (!gameState.advanceToNextDifficulty()) {
         gameState.status = GAME_STATUS.START;
       }
       syncModeButtonLabel();
     } else if (gameState.status === GAME_STATUS.GAMEOVER) {
-      gameState.restart();
-      syncModeButtonLabel();
+      const wasMuted = audio.muted;
+      crazyGames.requestMidgameAd({
+        onPause: () => {
+          if (!wasMuted) audio.toggleMute();
+        },
+        onResume: () => {
+          if (!wasMuted && audio.muted) audio.toggleMute();
+          gameState.restart();
+          syncModeButtonLabel();
+        }
+      });
     } else if (gameState.status === GAME_STATUS.PLAYING) {
       const actionDone = gameState.dropSelectedItem();
       const effMode = gameState.getEffectiveMode();
@@ -189,10 +219,10 @@ window.addEventListener('DOMContentLoaded', () => {
             syncModeButtonLabel();
           } else if (btn.isUnlocked && !btn.city.playable) {
             audio.playCarouselClick();
-            gameState.showMapNotice(`🚧 ${btn.city.name} llega en la próxima actualización`);
+            gameState.showMapNotice(t('map.comingSoon', { city: btn.city.name }));
           } else {
             audio.playFail();
-            gameState.showMapNotice(`🔒 Vence la ciudad anterior para desbloquear ${btn.city.name}`);
+            gameState.showMapNotice(t('map.locked', { city: btn.city.name }));
           }
           return true;
         }
@@ -368,7 +398,15 @@ window.addEventListener('DOMContentLoaded', () => {
   if (btnMute) {
     btnMute.addEventListener('click', () => {
       const isMuted = audio.toggleMute();
-      btnMute.textContent = isMuted ? '🔇 Audio: OFF' : '🔊 Audio: ON';
+      btnMute.textContent = isMuted ? t('ui.audioOff') : t('ui.audioOn');
+    });
+  }
+  if (btnLang) {
+    btnLang.addEventListener('click', () => {
+      audio.ensureContext();
+      audio.playCarouselClick();
+      toggleLang();
+      syncModeButtonLabel();
     });
   }
   if (btnHangar) {
@@ -391,6 +429,8 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  let prevStatus = gameState.status;
+
   function loop(currentTime) {
     const dt = Math.min((currentTime - lastTime) / 1000, 0.1);
     lastTime = currentTime;
@@ -399,6 +439,22 @@ window.addEventListener('DOMContentLoaded', () => {
     gameState.update(dt, inputHandler.state);
     if (wasRescue && !gameState.isRescueActive) {
       syncModeButtonLabel();
+    }
+    if (gameState.status !== prevStatus) {
+      const playingStates = [GAME_STATUS.PLAYING, GAME_STATUS.BOSS_FIGHT];
+      if (playingStates.includes(gameState.status)) {
+        crazyGames.gameplayStart();
+      } else {
+        crazyGames.gameplayStop();
+      }
+      if (
+        gameState.status === GAME_STATUS.BOSS_VICTORY ||
+        gameState.status === GAME_STATUS.LEVEL_COMPLETE ||
+        gameState.status === GAME_STATUS.VICTORY
+      ) {
+        crazyGames.happytime();
+      }
+      prevStatus = gameState.status;
     }
     renderer.render(gameState, dt);
 

@@ -7,6 +7,7 @@ import {
   OFFICIAL_TITLE
 } from '../domain/types.js';
 import { GAME_STATUS } from '../application/game_state.js';
+import { t } from '../domain/i18n.js';
 import { SpriteLibrary } from './sprites.js';
 
 export class CanvasRenderer {
@@ -846,7 +847,7 @@ export class CanvasRenderer {
         ctx.font = 'bold 10px "JetBrains Mono", monospace';
         ctx.fillStyle = '#4ade80';
         ctx.textAlign = 'center';
-        ctx.fillText('✓ SALVO', b.x + b.width / 2, b.y - 6);
+        ctx.fillText(t('hud.safe'), b.x + b.width / 2, b.y - 6);
       }
     } else if (b.type === BIOME_TYPES.POVERTY_BELT || b.type === BIOME_TYPES.FAVELA) {
       // Casitas en ladera (bloque, ladrillo, lámina de zinc, tinacos y tendederos)
@@ -996,7 +997,7 @@ export class CanvasRenderer {
       ctx.font = 'bold 10px "JetBrains Mono", monospace';
       ctx.fillStyle = '#facc15';
       ctx.textAlign = 'center';
-      ctx.fillText('🎯 LISTO!', landingX, groundY - 46);
+      ctx.fillText(t('hud.ready'), landingX, groundY - 46);
     }
   }
 
@@ -1184,12 +1185,12 @@ export class CanvasRenderer {
       ctx.fillStyle = '#f43f5e';
       ctx.textAlign = 'left';
       const hearts = '❤️'.repeat(Math.max(0, hw.lives)) + '🖤'.repeat(Math.max(0, hw.maxLives - hw.lives));
-      ctx.fillText(isMobile ? hearts : `VIDAS: ${hearts}`, 12, isMobile ? 20 : 27);
+      ctx.fillText(isMobile ? hearts : t('hud.lives', { hearts }), 12, isMobile ? 20 : 27);
 
       ctx.textAlign = 'right';
       ctx.fillStyle = '#fbbf24';
       ctx.font = `bold ${isMobile ? 12 : 14}px "JetBrains Mono", monospace`;
-      ctx.fillText(`SCORE: ${scorer.score}`, w - 12, 22);
+      ctx.fillText(t('hud.score', { score: scorer.score }), w - 12, 22);
 
       const spd = Math.round(gameState.plane.speed);
       ctx.textAlign = 'center';
@@ -1197,14 +1198,14 @@ export class CanvasRenderer {
       if (gameState.isRescueActive) {
         ctx.fillStyle = '#4ade80';
         ctx.fillText(
-          `🚑 RESCATE: ${hw.rescueCollected}/${hw.rescueGoal} SUMINISTROS`,
+          t('hwy.rescueHud', { cur: hw.rescueCollected, goal: hw.rescueGoal }),
           w / 2,
           isMobile ? 38 : 18
         );
       } else {
         ctx.fillStyle = '#38bdf8';
         ctx.fillText(
-          isMobile ? '🏃 SALTO EN CARRETERA' : '🏃 SALTO EN CARRETERA • [ESPACIO] SALTAR / DOBLE SALTO',
+          isMobile ? t('hwy.titleShort') : t('hwy.titleLong'),
           w / 2,
           isMobile ? 38 : 18
         );
@@ -1213,7 +1214,7 @@ export class CanvasRenderer {
       ctx.font = '10px "JetBrains Mono", monospace';
       ctx.fillStyle = spd > 320 ? '#ef4444' : spd > 240 ? '#facc15' : '#94a3b8';
       ctx.fillText(
-        `VEL: ${spd} KM/H  |  RÉCORD: ${Math.max(gameState.highScore, scorer.score)}`,
+        t('hwy.velRecord', { spd, rec: Math.max(gameState.highScore, scorer.score) }),
         w / 2,
         isMobile ? 52 : 35
       );
@@ -1224,7 +1225,7 @@ export class CanvasRenderer {
     ctx.font = `bold ${isMobile ? 10 : 11}px "JetBrains Mono", monospace`;
     ctx.fillStyle = '#f43f5e';
     ctx.textAlign = 'left';
-    ctx.fillText(isMobile ? '💖 JOY:' : '💖 JOY-O-METER:', 12, 16);
+    ctx.fillText(isMobile ? t('hud.joy') : t('hud.joyFull'), 12, 16);
 
     const barWidth = isMobile ? 86 : 128;
     const barHeight = 10;
@@ -1264,18 +1265,27 @@ export class CanvasRenderer {
       ctx.font = 'bold 10px "JetBrains Mono", monospace';
       ctx.fillStyle = '#38bdf8';
       ctx.fillText(
-        `${currentBiome.accentEmoji} ${currentBiome.name.toUpperCase()} • META: ${levelScore}/${levelCfg.targetScore}`,
+        t('hud.goalMobile', {
+          emoji: currentBiome.accentEmoji,
+          biome: t(`biome.${currentBiome.id}.name`).toUpperCase(),
+          score: levelScore,
+          target: levelCfg.targetScore
+        }),
         w / 2,
         49
       );
     } else {
       ctx.font = 'bold 12px "JetBrains Mono", monospace';
       ctx.fillStyle = '#38bdf8';
-      ctx.fillText(`${levelCfg.title.toUpperCase()} • ${currentBiome.accentEmoji} ${currentBiome.name.toUpperCase()}`, w / 2, 18);
+      ctx.fillText(`${levelCfg.title.toUpperCase()} • ${currentBiome.accentEmoji} ${t(`biome.${currentBiome.id}.name`).toUpperCase()}`, w / 2, 18);
 
       ctx.font = '10px "JetBrains Mono", monospace';
       ctx.fillStyle = spd > 280 ? '#ef4444' : spd > 195 ? '#facc15' : '#94a3b8';
-      ctx.fillText(`VELOCIDAD: ${spd} KT  |  META: ${levelScore}/${levelCfg.targetScore} (JOY ≥ ${levelCfg.minJoy}%)`, w / 2, 35);
+      ctx.fillText(
+        t('hud.speedDesktop', { spd, score: levelScore, target: levelCfg.targetScore, minJoy: levelCfg.minJoy }),
+        w / 2,
+        35
+      );
     }
 
     if (Math.abs(gameState.windX || 0) > 5) {
@@ -1286,7 +1296,7 @@ export class CanvasRenderer {
       ctx.font = 'bold 10px "JetBrains Mono", monospace';
       ctx.fillStyle = '#38bdf8';
       ctx.textAlign = 'center';
-      ctx.fillText(`💨 VIENTO ${windDir} ${windStr} KT`, w / 2, hudHeight + 13);
+      ctx.fillText(t('hud.windBanner', { dir: windDir, str: windStr }), w / 2, hudHeight + 13);
     }
 
     this.renderCarouselHUD(ctx, gameState, w);
@@ -1399,7 +1409,11 @@ export class CanvasRenderer {
     ctx.fillStyle = '#facc15';
     ctx.font = `bold ${isMobile ? 10 : 12}px "JetBrains Mono", monospace`;
     ctx.fillText(
-      `⭐ ${gameState.totalStars}/12  •  DIF: ${diffCfg.label.toUpperCase()}  •  ${planeCfg.name.toUpperCase()}`,
+      t('start.stats', {
+        stars: gameState.totalStars,
+        diff: t(`diff.${diffCfg.id}`).toUpperCase(),
+        plane: t(`plane.${planeCfg.id}`).toUpperCase()
+      }),
       w / 2,
       isMobile ? 50 : h / 2 - 122
     );
@@ -1420,10 +1434,10 @@ export class CanvasRenderer {
         { mode: GAME_MODES.HIGHWAY, x: startX, y: topY + (cardH + gap) * 3, w: cardW, h: cardH }
       ];
 
-      this.drawModeCardCompact(ctx, this.startModeButtons[0], '📖 MODO HISTORIA', 'Ciudades → Geometría + Rescate', 'TOCA PARA CAMPAÑA', '#facc15');
-      this.drawModeCardCompact(ctx, this.startModeButtons[1], '🏙️ CIUDAD LIBRE', 'Tegucigalpa & SPS • 5 cargas', 'TOCA PARA VOLAR', '#38bdf8');
-      this.drawModeCardCompact(ctx, this.startModeButtons[2], '📐 GEOMETRÍA', 'Figuras de precisión arcade', 'TOCA PARA JUGAR', '#a855f7');
-      this.drawModeCardCompact(ctx, this.startModeButtons[3], '🏃 EN CARRETERA', 'Guacamayas, Venados & Mareros', 'TOCA PARA CORRER', '#f97316');
+      this.drawModeCardCompact(ctx, this.startModeButtons[0], t('start.modeStory'), t('start.cStorySub'), t('start.cStoryCta'), '#facc15');
+      this.drawModeCardCompact(ctx, this.startModeButtons[1], t('start.modeCity'), t('start.cCitySub'), t('start.cCityCta'), '#38bdf8');
+      this.drawModeCardCompact(ctx, this.startModeButtons[2], t('start.modeGeo'), t('start.cGeoSub'), t('start.cGeoCta'), '#a855f7');
+      this.drawModeCardCompact(ctx, this.startModeButtons[3], t('start.modeHwy'), t('start.cHwySub'), t('start.cHwyCta'), '#f97316');
       return;
     }
 
@@ -1440,14 +1454,14 @@ export class CanvasRenderer {
       { mode: GAME_MODES.HIGHWAY, x: startX + (cardW + gap) * 3, y: cardY, w: cardW, h: cardH }
     ];
 
-    this.drawModeCard(ctx, this.startModeButtons[0], '📖 HISTORIA', '4 Capítulos', 'Ciudades → Geometría', '¡Incluye Rescate!', '[1] CAMPAÑA', '#facc15');
-    this.drawModeCard(ctx, this.startModeButtons[1], '🏙️ CIUDAD', 'TGU & SPS', 'Apunta a la gente,', 'fuegos y laderas.', '[2] VOLAR', '#38bdf8');
-    this.drawModeCard(ctx, this.startModeButtons[2], '📐 FIGURAS', 'Precisión', 'Encaja piezas en', 'bases neón.', '[3] JUGAR', '#a855f7');
-    this.drawModeCard(ctx, this.startModeButtons[3], '🏃 CARRETERA', 'Tegucigalpa', 'Guacamayas, venados', 'y mareros.', '[4] CORRER', '#f97316');
+    this.drawModeCard(ctx, this.startModeButtons[0], t('start.dStoryTitle'), t('start.dStorySub'), t('start.dStory1'), t('start.dStory2'), t('start.dStoryCta'), '#facc15');
+    this.drawModeCard(ctx, this.startModeButtons[1], t('start.dCityTitle'), t('start.dCitySub'), t('start.dCity1'), t('start.dCity2'), t('start.dCityCta'), '#38bdf8');
+    this.drawModeCard(ctx, this.startModeButtons[2], t('start.dGeoTitle'), t('start.dGeoSub'), t('start.dGeo1'), t('start.dGeo2'), t('start.dGeoCta'), '#a855f7');
+    this.drawModeCard(ctx, this.startModeButtons[3], t('start.dHwyTitle'), t('start.dHwySub'), t('start.dHwy1'), t('start.dHwy2'), t('start.dHwyCta'), '#f97316');
 
     ctx.fillStyle = '#94a3b8';
     ctx.font = '11px "JetBrains Mono", monospace';
-    ctx.fillText('Presiona [1]-[4] o clic en tarjeta • Usa "✈️ Hangar" arriba para cambiar de avión', w / 2, cardY + cardH + 36);
+    ctx.fillText(t('start.footerHint'), w / 2, cardY + cardH + 36);
   }
 
   drawModeCardCompact(ctx, box, title, subtitle, cta, accent) {
@@ -1514,24 +1528,24 @@ export class CanvasRenderer {
     ctx.fillStyle = '#f97316';
     ctx.font = 'bold 22px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('🆘 ¡ATERRIZAJE DE EMERGENCIA!', w / 2, h / 2 - 65);
+    ctx.fillText(t('rescue.bannerTitle'), w / 2, h / 2 - 65);
 
     ctx.fillStyle = '#f8fafc';
     ctx.font = '13px "Inter", sans-serif';
-    ctx.fillText('El Joy-O-Meter cayó a 0%, pero tienes una segunda oportunidad:', w / 2, h / 2 - 28);
+    ctx.fillText(t('rescue.bannerSub'), w / 2, h / 2 - 28);
 
     ctx.fillStyle = '#4ade80';
     ctx.font = 'bold 14px "JetBrains Mono", monospace';
-    ctx.fillText('🏃 MISIÓN DE RESCATE EN CARRETERA', w / 2, h / 2 + 8);
+    ctx.fillText(t('rescue.bannerMode'), w / 2, h / 2 + 8);
 
     ctx.fillStyle = '#cbd5e1';
     ctx.font = '12px "Inter", sans-serif';
-    ctx.fillText('Recoge 8 suministros esquivando guacamayas, venados y mareros', w / 2, h / 2 + 34);
-    ctx.fillText('para recargar 50% de Joy y continuar donde quedaste.', w / 2, h / 2 + 52);
+    ctx.fillText(t('rescue.bannerLine1'), w / 2, h / 2 + 34);
+    ctx.fillText(t('rescue.bannerLine2'), w / 2, h / 2 + 52);
 
     ctx.fillStyle = '#facc15';
     ctx.font = 'bold 14px "JetBrains Mono", monospace';
-    ctx.fillText('▶ TOCA O PRESIONA [ESPACIO] PARA CORRER EL RESCATE', w / 2, h / 2 + 95);
+    ctx.fillText(t('rescue.bannerCta'), w / 2, h / 2 + 95);
   }
 
   renderLevelCompleteScreen(ctx, w, h, gameState) {
@@ -1544,18 +1558,18 @@ export class CanvasRenderer {
     ctx.fillStyle = '#4ade80';
     ctx.font = 'bold 24px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`🎉 ¡${levelCfg.title.toUpperCase()} COMPLETADO!`, w / 2, h / 2 - 70);
+    ctx.fillText(t('lvl.titleBanner', { title: levelCfg.title.toUpperCase() }), w / 2, h / 2 - 70);
 
     ctx.font = '26px sans-serif';
     ctx.fillText(starsStr, w / 2, h / 2 - 28);
 
     ctx.fillStyle = '#fbbf24';
     ctx.font = 'bold 18px "JetBrains Mono", monospace';
-    ctx.fillText(`SCORE: ${gameState.dropEngine.scorer.score}  |  ESTRELLAS TOTALES: ⭐ ${gameState.totalStars}`, w / 2, h / 2 + 16);
+    ctx.fillText(t('lvl.scoreStars', { score: gameState.dropEngine.scorer.score, stars: gameState.totalStars }), w / 2, h / 2 + 16);
 
     ctx.fillStyle = '#38bdf8';
     ctx.font = 'bold 14px "JetBrains Mono", monospace';
-    ctx.fillText('▶ PRESIONA [ESPACIO] O TOCA PARA EL SIGUIENTE CAPÍTULO', w / 2, h / 2 + 72);
+    ctx.fillText(t('lvl.nextChapter'), w / 2, h / 2 + 72);
   }
 
   renderVictoryScreen(ctx, w, h, gameState) {
@@ -1565,42 +1579,42 @@ export class CanvasRenderer {
     ctx.fillStyle = '#facc15';
     ctx.font = 'bold 28px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('🏆 ¡MISIÓN CUMPLIDA, GENERAL!', w / 2, h / 2 - 75);
+    ctx.fillText(t('vic.heroTitle'), w / 2, h / 2 - 75);
 
     if (gameState.isNewRecord) {
       ctx.fillStyle = '#4ade80';
       ctx.font = 'bold 14px "JetBrains Mono", monospace';
-      ctx.fillText('🌟 ¡NUEVO RÉCORD HISTÓRICO! 🌟', w / 2, h / 2 - 42);
+      ctx.fillText(t('go.newRecord'), w / 2, h / 2 - 42);
     }
 
     ctx.fillStyle = '#f8fafc';
     ctx.font = '14px "Inter", sans-serif';
-    ctx.fillText('Llevaste alegría máxima a todo el territorio.', w / 2, h / 2 - 16);
+    ctx.fillText(t('vic.heroSub'), w / 2, h / 2 - 16);
 
     ctx.fillStyle = '#fbbf24';
     ctx.font = 'bold 20px "JetBrains Mono", monospace';
-    ctx.fillText(`SCORE FINAL: ${gameState.dropEngine.scorer.score}`, w / 2, h / 2 + 20);
+    ctx.fillText(t('vic.finalScore', { score: gameState.dropEngine.scorer.score }), w / 2, h / 2 + 20);
     ctx.fillStyle = '#38bdf8';
     ctx.font = 'bold 16px "JetBrains Mono", monospace';
-    ctx.fillText(`🏆 HIGH SCORE: ${gameState.highScore}`, w / 2, h / 2 + 48);
+    ctx.fillText(t('vic.highScore', { high: gameState.highScore }), w / 2, h / 2 + 48);
     ctx.fillStyle = '#f43f5e';
     ctx.font = 'bold 14px "JetBrains Mono", monospace';
-    ctx.fillText(`MÁXIMO COMBO: x${gameState.dropEngine.scorer.maxCombo}`, w / 2, h / 2 + 74);
+    ctx.fillText(t('vic.maxCombo', { combo: gameState.dropEngine.scorer.maxCombo }), w / 2, h / 2 + 74);
 
     const diffCfg = gameState.getDifficultyConfig();
     const nextDiffLabel =
       diffCfg.nextDifficulty === 'NORMAL'
-        ? 'NORMAL'
+        ? t('diff.NORMAL').toUpperCase()
         : diffCfg.nextDifficulty === 'HARD'
-          ? 'DIFÍCIL'
+          ? t('diff.HARD').toUpperCase()
           : null;
 
     ctx.fillStyle = '#22c55e';
     ctx.font = 'bold 14px "JetBrains Mono", monospace';
     ctx.fillText(
       nextDiffLabel
-        ? `▶ PRESIONA [ESPACIO] O TOCA PARA SUBIR A DIFICULTAD ${nextDiffLabel}`
-        : '🔄 PRESIONA [ESPACIO] O TOCA PARA VOLVER AL MENÚ',
+        ? t('vic.nextDiffBtn', { diff: nextDiffLabel })
+        : t('vic.menuBtn'),
       w / 2,
       h / 2 + 115
     );
@@ -1613,45 +1627,45 @@ export class CanvasRenderer {
     ctx.fillStyle = '#ef4444';
     ctx.font = 'bold 26px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('💔 MISIÓN TERMINADA', w / 2, h / 2 - 75);
+    ctx.fillText(t('go.title'), w / 2, h / 2 - 75);
 
     if (gameState.isNewRecord) {
       ctx.fillStyle = '#4ade80';
       ctx.font = 'bold 14px "JetBrains Mono", monospace';
-      ctx.fillText('🌟 ¡NUEVO RÉCORD EN ESTE MODO! 🌟', w / 2, h / 2 - 44);
+      ctx.fillText(t('go.newRecord'), w / 2, h / 2 - 44);
     }
 
     ctx.fillStyle = '#f8fafc';
     ctx.font = '14px "Inter", sans-serif';
     ctx.fillText(
       gameState.mode === GAME_MODES.HIGHWAY
-        ? 'Te quedaste sin vidas en la carretera.'
-        : 'El Joy-O-Meter cayó a 0%.',
+        ? t('go.noLives')
+        : t('go.noJoy'),
       w / 2,
       h / 2 - 18
     );
 
     ctx.fillStyle = '#fbbf24';
     ctx.font = 'bold 20px "JetBrains Mono", monospace';
-    ctx.fillText(`SCORE FINAL: ${gameState.dropEngine.scorer.score}`, w / 2, h / 2 + 18);
+    ctx.fillText(t('vic.finalScore', { score: gameState.dropEngine.scorer.score }), w / 2, h / 2 + 18);
 
     ctx.fillStyle = '#38bdf8';
     ctx.font = 'bold 16px "JetBrains Mono", monospace';
-    ctx.fillText(`🏆 HIGH SCORE: ${gameState.highScore}`, w / 2, h / 2 + 46);
+    ctx.fillText(t('vic.highScore', { high: gameState.highScore }), w / 2, h / 2 + 46);
 
     ctx.fillStyle = '#94a3b8';
     ctx.font = 'bold 13px "JetBrains Mono", monospace';
-    ctx.fillText(`MÁXIMO COMBO: x${gameState.dropEngine.scorer.maxCombo}`, w / 2, h / 2 + 72);
+    ctx.fillText(t('vic.maxCombo', { combo: gameState.dropEngine.scorer.maxCombo }), w / 2, h / 2 + 72);
 
     if (gameState.mode === GAME_MODES.GEOMETRY) {
       ctx.fillStyle = '#22d3ee';
       ctx.font = 'bold 13px "JetBrains Mono", monospace';
-      ctx.fillText(`TIROS PERFECTOS: ${gameState.dropEngine.scorer.perfectDrops}`, w / 2, h / 2 + 94);
+      ctx.fillText(t('go.perfectShots', { count: gameState.dropEngine.scorer.perfectDrops }), w / 2, h / 2 + 94);
     }
 
     ctx.fillStyle = '#22c55e';
     ctx.font = 'bold 14px "JetBrains Mono", monospace';
-    ctx.fillText('🔄 PRESIONA [ESPACIO] O TOCA PARA REINTENTAR', w / 2, h / 2 + 126);
+    ctx.fillText(t('go.retry'), w / 2, h / 2 + 126);
   }
 
   /**
@@ -1735,8 +1749,7 @@ export class CanvasRenderer {
 
       const bubbleX = isMobile ? w * 0.40 : w * 0.36;
       const bubbleW = Math.min(440, w - bubbleX - 18);
-      const quote =
-        'Para mi ventura propia y desventura de mis enemigos, me ha revivido la IA; tomo como destino a bien traer felicidad a mi pueblo, que ha sido abandonado a su suerte y de la cual, veo con tristeza, no goza.';
+      const quote = t('intro.quote1');
       this.drawComicBubble(ctx, bubbleX, isMobile ? 76 : 104, bubbleW, quote, isMobile ? 11 : 13);
     } else {
       // Escena 2: Sube al avión y exclama
@@ -1750,7 +1763,7 @@ export class CanvasRenderer {
 
       const bubbleX = isMobile ? w * 0.34 : w * 0.36;
       const bubbleW = Math.min(420, w - bubbleX - 18);
-      const quote = 'Se me entrega este corcel, que he de cabalgar por estos cielos de límpido azul.';
+      const quote = t('intro.quote2');
       this.drawComicBubble(ctx, bubbleX, isMobile ? 96 : 120, bubbleW, quote, isMobile ? 12 : 14);
     }
 
@@ -1758,7 +1771,7 @@ export class CanvasRenderer {
     ctx.font = `bold ${isMobile ? 12 : 14}px "JetBrains Mono", monospace`;
     ctx.textAlign = 'center';
     ctx.fillText(
-      step === 0 ? '▶ TOCA O PRESIONA [ESPACIO] PARA CONTINUAR' : '▶ TOCA O PRESIONA [ESPACIO] PARA VER MODOS DE JUEGO',
+      step === 0 ? t('intro.continue') : t('intro.continueModes'),
       w / 2,
       h - 22
     );
@@ -1776,7 +1789,7 @@ export class CanvasRenderer {
     ctx.textAlign = 'center';
     ctx.fillStyle = '#facc15';
     ctx.font = `bold ${isMobile ? 16 : 22}px "JetBrains Mono", monospace`;
-    ctx.fillText('🗺️ MAPA DE HONDURAS — MODO HISTORIA', w / 2, isMobile ? 28 : 34);
+    ctx.fillText(t('map.title'), w / 2, isMobile ? 28 : 34);
 
     // Silueta estilizada 16-bit de Honduras
     const mapX = w * 0.10;
@@ -1860,7 +1873,7 @@ export class CanvasRenderer {
     ctx.fillStyle = '#4ade80';
     ctx.font = `bold ${isMobile ? 11 : 13}px "JetBrains Mono", monospace`;
     ctx.textAlign = 'center';
-    ctx.fillText('TOCA UNA CIUDAD DESBLOQUEADA O PRESIONA [ESPACIO] PARA DESPEGAR', w / 2, h - 16);
+    ctx.fillText(t('map.takeoff'), w / 2, h - 16);
 
     if (gameState.mapMessageTimer > 0 && gameState.mapMessage) {
       ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
@@ -1883,15 +1896,15 @@ export class CanvasRenderer {
     ctx.textAlign = 'center';
     ctx.fillStyle = '#38bdf8';
     ctx.font = 'bold 28px "JetBrains Mono", monospace';
-    ctx.fillText('⏸️ JUEGO EN PAUSA', w / 2, h / 2 - 36);
+    ctx.fillText(t('pause.title'), w / 2, h / 2 - 36);
 
     ctx.fillStyle = '#4ade80';
     ctx.font = 'bold 14px "JetBrains Mono", monospace';
-    ctx.fillText('▶ TOCA O PRESIONA [ESPACIO] / [P] PARA CONTINUAR', w / 2, h / 2 + 12);
+    ctx.fillText(t('pause.continue'), w / 2, h / 2 + 12);
 
     ctx.fillStyle = '#94a3b8';
     ctx.font = '12px "JetBrains Mono", monospace';
-    ctx.fillText('Usa "🏠 Menú" arriba para volver al inicio', w / 2, h / 2 + 44);
+    ctx.fillText(t('pause.hint'), w / 2, h / 2 + 44);
   }
 
   /**
@@ -1928,7 +1941,7 @@ export class CanvasRenderer {
     ctx.textAlign = 'center';
     ctx.fillStyle = '#facc15';
     ctx.font = `bold ${w < 620 ? 10 : 12}px "JetBrains Mono", monospace`;
-    ctx.fillText(`👹 ${be.config.name.toUpperCase()}`, w / 2, 17);
+    ctx.fillText(`👹 ${t(`boss.${be.config.id}.name`).toUpperCase()}`, w / 2, 17);
 
     ctx.fillStyle = '#334155';
     ctx.fillRect(barX, 24, barW, 14);
@@ -1946,7 +1959,7 @@ export class CanvasRenderer {
     if (isSps) {
       ctx.fillStyle = '#38bdf8';
       ctx.font = '10px "JetBrains Mono", monospace';
-      ctx.fillText('💡 USA AGUA Y HIELO (¡FUEGO Y BALAS LO ENCIENDEN!)', w / 2, hudH - 6);
+      ctx.fillText(t('boss.hintSps'), w / 2, hudH - 6);
     }
 
     // Dibujar Avión (parpadea si acaba de recibir golpe)
@@ -2136,7 +2149,7 @@ export class CanvasRenderer {
 
       ctx.font = 'bold 8px "JetBrains Mono", monospace';
       ctx.fillStyle = '#cbd5e1';
-      ctx.fillText(wp.name.toUpperCase(), wStartX + wSize / 2, wy + wSize - 6);
+      ctx.fillText(t(`boss.weapon.${wp.id}`).toUpperCase(), wStartX + wSize / 2, wy + wSize - 6);
     });
   }
 
@@ -2152,18 +2165,18 @@ export class CanvasRenderer {
 
     const bubbleX = isMobile ? w * 0.36 : w * 0.35;
     const bubbleW = Math.min(450, w - bubbleX - 18);
-    const quote = gameState.bossEngine.config.victoryQuote;
+    const quote = t(`boss.${gameState.bossEngine.config.id}.victory`);
 
     ctx.textAlign = 'center';
     ctx.fillStyle = '#4ade80';
     ctx.font = `bold ${isMobile ? 16 : 22}px "JetBrains Mono", monospace`;
-    ctx.fillText('🏆 ¡JEFE DERROTADO!', w / 2, isMobile ? 38 : 48);
+    ctx.fillText(t('boss.defeated'), w / 2, isMobile ? 38 : 48);
 
     this.drawComicBubble(ctx, bubbleX, isMobile ? 64 : 88, bubbleW, quote, isMobile ? 11 : 13);
 
     ctx.fillStyle = '#facc15';
     ctx.font = `bold ${isMobile ? 12 : 14}px "JetBrains Mono", monospace`;
     ctx.textAlign = 'center';
-    ctx.fillText('▶ TOCA O PRESIONA [ESPACIO] PARA CONTINUAR', w / 2, h - 22);
+    ctx.fillText(t('intro.continue'), w / 2, h - 22);
   }
 }

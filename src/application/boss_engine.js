@@ -1,4 +1,5 @@
 import { BOSS_CONFIGS, BOSS_WEAPONS } from '../domain/types.js';
+import { t, tBossAttacks } from '../domain/i18n.js';
 
 const BOSS_DIFF_SETTINGS = {
   EASY: { hpMult: 0.65, bossSpeed: 55, minCd: 2.1, cdRange: 0.7, projSpeed: 165, lives: 5 },
@@ -157,7 +158,8 @@ export class BossEngine {
           radius: 13
         });
       } else {
-        const quote = this.config.attacks[Math.floor(Math.random() * this.config.attacks.length)];
+        const attacks = tBossAttacks(this.config.id);
+        const quote = attacks[Math.floor(Math.random() * attacks.length)];
         this.bossAttacks.push({
           kind: 'TEXT',
           x: this.boss.x - 10,
@@ -190,7 +192,8 @@ export class BossEngine {
           hitDone: false
         });
       } else {
-        const quote = this.config.attacks[Math.floor(Math.random() * this.config.attacks.length)];
+        const attacks = tBossAttacks(this.config.id);
+        const quote = attacks[Math.floor(Math.random() * attacks.length)];
         this.bossAttacks.push({
           kind: 'TEXT',
           x: this.boss.x - 10,
@@ -205,7 +208,8 @@ export class BossEngine {
       // Tegucigalpa alterna entre Grito/Bocinazo, Llanta giratoria y Nube de humo tóxico
       const kindIdx = seq % 3;
       if (kindIdx === 0) {
-        const quote = this.config.attacks[Math.floor(Math.random() * this.config.attacks.length)];
+        const attacks = tBossAttacks(this.config.id);
+        const quote = attacks[Math.floor(Math.random() * attacks.length)];
         this.bossAttacks.push({
           kind: 'TEXT',
           x: this.boss.x - 10,
@@ -307,8 +311,8 @@ export class BossEngine {
           dropEngine.floatingTexts.push({
             x: this.boss.x + this.boss.width / 2,
             y: this.boss.y - 10,
-            text: '🔥 ¡SE ENCIENDE MÁS! +HP',
-            subtext: '¡Usa Agua o Hielo!',
+            text: t('boss.enrageText'),
+            subtext: t('boss.enrageSub'),
             color: '#f97316',
             life: 1.3,
             maxLife: 1.3,
@@ -407,7 +411,7 @@ export class BossEngine {
     dropEngine.floatingTexts.push({
       x: plane.x + 30,
       y: plane.y - 20,
-      text: '💥 ¡IMPACTO!',
+      text: t('boss.hit'),
       subtext: '',
       color: '#ef4444',
       life: 1.0,

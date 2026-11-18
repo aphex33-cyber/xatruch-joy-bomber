@@ -1,4 +1,5 @@
 import { BIOME_TYPES, ITEM_TYPES, PLANES_CATALOG } from '../domain/types.js';
+import { t } from '../domain/i18n.js';
 
 /**
  * Compila una matriz ASCII de píxeles en un canvas offscreen para renderizado rápido 16-bit
@@ -422,7 +423,7 @@ export class SpriteLibrary {
     ctx.font = 'bold 9px "JetBrains Mono", monospace';
     ctx.fillStyle = '#fef08a';
     ctx.textAlign = 'center';
-    ctx.fillText('¡GUAU!', x + 14, y - 4);
+    ctx.fillText(t('sprite.woof'), x + 14, y - 4);
     ctx.restore();
   }
 
@@ -468,7 +469,7 @@ export class SpriteLibrary {
     ctx.font = 'bold 9px "JetBrains Mono", monospace';
     ctx.fillStyle = '#e879f9';
     ctx.textAlign = 'center';
-    ctx.fillText('¡UUUHHH! 👻', x + 14, y - 5);
+    ctx.fillText(t('sprite.boo'), x + 14, y - 5);
     ctx.restore();
   }
 

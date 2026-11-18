@@ -2,6 +2,8 @@
  * DOMINIO: Sistema de Alegría (Joy-O-Meter), Combos, Puntuación y Récords
  */
 
+import { t } from './i18n.js';
+
 const HIGH_SCORE_STORAGE_KEY = 'joy_bomber_highscores_v1';
 
 export class HighScoreStore {
@@ -168,7 +170,7 @@ export class JoyScorer {
           points,
           combo: this.combo,
           joyDelta: joyGain,
-          message: biome.happyMessage
+          message: t(`biome.${biome.id}.happy`)
         };
       } else {
         const points = Math.round(biome.weightScore * 0.4);
@@ -182,7 +184,7 @@ export class JoyScorer {
           points,
           combo: this.combo,
           joyDelta: joyGain,
-          message: '¡Cerca! Apunta directo a la gente'
+          message: t('hud.near')
         };
       }
     } else {
@@ -198,8 +200,8 @@ export class JoyScorer {
         lostCombo: oldCombo,
         joyDelta: -joyLoss,
         message: targetCitizen
-          ? `¡Pidió ${targetCitizen.needIcon}, no eso!`
-          : biome.unhappyMessage
+          ? t('hud.askedFor', { icon: targetCitizen.needIcon })
+          : t(`biome.${biome.id}.unhappy`)
       };
     }
   }
@@ -218,10 +220,10 @@ export class JoyScorer {
       this.joy = Math.max(0, this.joy - joyLoss);
 
       const reason = !slot || distance > 46
-        ? '¡FALLASTE LA BASE!'
+        ? t('hud.missedSlot')
         : slot.filled
-          ? '¡ESA BASE YA ESTÁ LLENA!'
-          : '¡FIGURA INCORRECTA!';
+          ? t('hud.slotFilled')
+          : t('hud.wrongShape');
 
       return {
         matched: false,
@@ -258,7 +260,7 @@ export class JoyScorer {
       points,
       combo: this.combo,
       joyDelta: joyGain,
-      message: isPerfect ? '¡ENCAJE PERFECTO!' : '¡BUEN TIRO!'
+      message: isPerfect ? t('hud.perfectFit') : t('hud.goodShot')
     };
   }
 

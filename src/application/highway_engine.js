@@ -1,4 +1,5 @@
 import { ITEM_TYPES, ITEMS_CATALOG } from '../domain/types.js';
+import { tHighwayHonks } from '../domain/i18n.js';
 
 /**
  * APLICACIÓN: Motor del Modo "Salto en Carretera" (Vista de Ventana)
@@ -150,14 +151,7 @@ export class HighwayEngine {
       y = this.groundY - height;
 
       const palette = ['#ef4444', '#facc15', '#f8fafc', '#38bdf8', '#22c55e', '#94a3b8'];
-      const quotes = [
-        '¡PIIIP! 📢',
-        'Anillo Periférico 🐢',
-        'Bulevar Suyapa 2h',
-        '¡Llegamos mañana!',
-        '¡Mueve pues! 😤',
-        'Tráfico TGU 🚗🚗'
-      ];
+      const quotes = tHighwayHonks();
       honkText = quotes[Math.floor(Math.random() * quotes.length)];
       cars = [];
       for (let i = 0; i < carCount; i++) {

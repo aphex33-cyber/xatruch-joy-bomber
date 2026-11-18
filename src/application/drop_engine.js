@@ -1,5 +1,6 @@
 import { BallisticsEngine } from '../domain/physics.js';
 import { JoyScorer } from '../domain/score.js';
+import { t } from '../domain/i18n.js';
 import { GAME_MODES, ITEMS_CATALOG, ITEM_TYPES, BIOME_TYPES } from '../domain/types.js';
 
 export class DropEngine {
@@ -188,7 +189,7 @@ export class DropEngine {
     this.floatingTexts.push({
       x: p.x,
       y: groundY - 20,
-      text: result.matched ? `+${result.points} JOY!` : '¡ERROR! -JOY',
+      text: result.matched ? t('hud.dropJoy', { pts: result.points }) : t('hud.dropError'),
       subtext: result.message,
       color: result.tier === 'DIRECT' ? '#4ade80' : result.tier === 'INDIRECT' ? '#fde047' : '#f87171',
       life: 2.0,

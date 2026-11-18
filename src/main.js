@@ -17,6 +17,8 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnNext = document.getElementById('btnNext');
   const btnDrop = document.getElementById('btnDrop');
   const btnMute = document.getElementById('btnMute');
+  const btnMenu = document.getElementById('btnMenu');
+  const btnPause = document.getElementById('btnPause');
   const btnMode = document.getElementById('btnMode');
   const btnDifficulty = document.getElementById('btnDifficulty');
   const btnHangar = document.getElementById('btnHangar');
@@ -123,6 +125,10 @@ window.addEventListener('DOMContentLoaded', () => {
     if (isMobileDevice() && window.innerWidth > window.innerHeight && !isNativeFullscreen()) {
       requestRealFullscreen();
     }
+    if (gameState.status === GAME_STATUS.PAUSED) {
+      gameState.togglePause();
+      return;
+    }
     if (gameState.status === GAME_STATUS.INTRO) {
       audio.playCarouselClick();
       gameState.advanceIntro();
@@ -181,8 +187,12 @@ window.addEventListener('DOMContentLoaded', () => {
             audio.playCarouselClick();
             gameState.startStoryStage(btn.city.stageIndex);
             syncModeButtonLabel();
+          } else if (btn.isUnlocked && !btn.city.playable) {
+            audio.playCarouselClick();
+            gameState.showMapNotice(`🚧 ${btn.city.name} llega en la próxima actualización`);
           } else {
             audio.playFail();
+            gameState.showMapNotice(`🔒 Vence la ciudad anterior para desbloquear ${btn.city.name}`);
           }
           return true;
         }
@@ -271,7 +281,8 @@ window.addEventListener('DOMContentLoaded', () => {
     },
     handleSelectIndex,
     () => triggerAction(),
-    handleCanvasClick
+    handleCanvasClick,
+    () => gameState.togglePause()
   );
 
   inputHandler.attachCanvasEvents(canvas, () => renderer.carouselHitboxes);
@@ -312,6 +323,21 @@ window.addEventListener('DOMContentLoaded', () => {
   gameState.highwayEngine.onStarCollected = () => audio.playStar();
   gameState.highwayEngine.onObstacleHit = () => audio.playFail();
 
+  if (btnMenu) {
+    btnMenu.addEventListener('click', () => {
+      audio.ensureContext();
+      audio.playCarouselClick();
+      gameState.returnToMenu();
+      syncModeButtonLabel();
+    });
+  }
+  if (btnPause) {
+    btnPause.addEventListener('click', () => {
+      audio.ensureContext();
+      audio.playCarouselClick();
+      gameState.togglePause();
+    });
+  }
   if (btnDifficulty) {
     btnDifficulty.addEventListener('click', () => {
       audio.ensureContext();

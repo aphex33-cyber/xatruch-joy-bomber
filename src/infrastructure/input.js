@@ -1,11 +1,12 @@
 export class InputHandler {
-  constructor(onDrop, onSelectNext, onSelectPrev, onSelectIndex, onActionTrigger, onCanvasClick) {
+  constructor(onDrop, onSelectNext, onSelectPrev, onSelectIndex, onActionTrigger, onCanvasClick, onPauseToggle) {
     this.onDrop = onDrop;
     this.onSelectNext = onSelectNext;
     this.onSelectPrev = onSelectPrev;
     this.onSelectIndex = onSelectIndex;
     this.onActionTrigger = onActionTrigger;
     this.onCanvasClick = onCanvasClick;
+    this.onPauseToggle = onPauseToggle;
 
     this.state = {
       speedUp: false,
@@ -48,6 +49,8 @@ export class InputHandler {
 
       if (e.code === 'Space') {
         this.onActionTrigger();
+      } else if (e.code === 'KeyP' || e.code === 'Escape') {
+        if (this.onPauseToggle) this.onPauseToggle();
       } else if (e.key === '1') {
         this.onSelectIndex(0);
       } else if (e.key === '2') {

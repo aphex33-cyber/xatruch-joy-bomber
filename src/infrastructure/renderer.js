@@ -71,8 +71,11 @@ export class CanvasRenderer {
       return;
     }
 
-    if (gameState.status === GAME_STATUS.BOSS_FIGHT) {
+    if (gameState.status === GAME_STATUS.BOSS_FIGHT || (gameState.status === GAME_STATUS.PAUSED && gameState.pausedFromStatus === GAME_STATUS.BOSS_FIGHT)) {
       this.renderBossFight(ctx, w, h, gameState);
+      if (gameState.status === GAME_STATUS.PAUSED) {
+        this.renderPausedScreen(ctx, w, h, gameState);
+      }
       ctx.restore();
       return;
     }
@@ -140,6 +143,8 @@ export class CanvasRenderer {
     // Pantallas de Estado
     if (gameState.status === GAME_STATUS.START) {
       this.renderStartScreen(ctx, w, h, gameState);
+    } else if (gameState.status === GAME_STATUS.PAUSED) {
+      this.renderPausedScreen(ctx, w, h, gameState);
     } else if (gameState.status === GAME_STATUS.PLANE_STUNT) {
       // Pirueta silenciosa sin texto sobre la pantalla
     } else if (gameState.status === GAME_STATUS.RESCUE_PROMPT) {
@@ -1856,6 +1861,37 @@ export class CanvasRenderer {
     ctx.font = `bold ${isMobile ? 11 : 13}px "JetBrains Mono", monospace`;
     ctx.textAlign = 'center';
     ctx.fillText('TOCA UNA CIUDAD DESBLOQUEADA O PRESIONA [ESPACIO] PARA DESPEGAR', w / 2, h - 16);
+
+    if (gameState.mapMessageTimer > 0 && gameState.mapMessage) {
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+      ctx.beginPath();
+      ctx.roundRect(w / 2 - 210, 44, 420, 32, 8);
+      ctx.fill();
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#facc15';
+      ctx.font = `bold ${isMobile ? 10 : 12}px "JetBrains Mono", monospace`;
+      ctx.fillText(gameState.mapMessage, w / 2, 64);
+    }
+  }
+
+  renderPausedScreen(ctx, w, h, gameState) {
+    ctx.fillStyle = 'rgba(9, 13, 22, 0.82)';
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 28px "JetBrains Mono", monospace';
+    ctx.fillText('⏸️ JUEGO EN PAUSA', w / 2, h / 2 - 36);
+
+    ctx.fillStyle = '#4ade80';
+    ctx.font = 'bold 14px "JetBrains Mono", monospace';
+    ctx.fillText('▶ TOCA O PRESIONA [ESPACIO] / [P] PARA CONTINUAR', w / 2, h / 2 + 12);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '12px "JetBrains Mono", monospace';
+    ctx.fillText('Usa "🏠 Menú" arriba para volver al inicio', w / 2, h / 2 + 44);
   }
 
   /**

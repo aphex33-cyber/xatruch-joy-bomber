@@ -20,6 +20,7 @@ export const GAME_STATUS = {
   START: 'START',
   STORY_MAP: 'STORY_MAP',
   PLAYING: 'PLAYING',
+  PAUSED: 'PAUSED',
   BOSS_FIGHT: 'BOSS_FIGHT',
   BOSS_VICTORY: 'BOSS_VICTORY',
   PLANE_STUNT: 'PLANE_STUNT',
@@ -52,6 +53,9 @@ export class GameState {
 
     this.isRescueActive = false;
     this.rescueUsedThisRun = false;
+    this.pausedFromStatus = null;
+    this.mapMessage = '';
+    this.mapMessageTimer = 0;
 
     // Estado de pirueta acrobática entre niveles
     this.stuntTimer = 0;
@@ -113,6 +117,27 @@ export class GameState {
     }
   }
 
+  togglePause() {
+    if (this.status === GAME_STATUS.PLAYING || this.status === GAME_STATUS.BOSS_FIGHT) {
+      this.pausedFromStatus = this.status;
+      this.status = GAME_STATUS.PAUSED;
+    } else if (this.status === GAME_STATUS.PAUSED) {
+      this.status = this.pausedFromStatus || GAME_STATUS.PLAYING;
+      this.pausedFromStatus = null;
+    }
+  }
+
+  returnToMenu() {
+    this.isRescueActive = false;
+    this.pausedFromStatus = null;
+    this.status = GAME_STATUS.START;
+  }
+
+  showMapNotice(msg) {
+    this.mapMessage = msg;
+    this.mapMessageTimer = 2.6;
+  }
+
   openStoryMap() {
     this.mode = GAME_MODES.STORY;
     this.unlockedCities = ProgressStore.getUnlockedCities();
@@ -125,6 +150,9 @@ export class GameState {
     this.levelStartScore = 0;
     this.isRescueActive = false;
     this.rescueUsedThisRun = false;
+    this.pausedFromStatus = null;
+    this.mapMessage = '';
+    this.mapMessageTimer = 0;
     this.highScore = HighScoreStore.get(this.mode);
     this.isNewRecord = false;
     this.carouselItems = this.getItemsForCurrentLevel();
@@ -272,6 +300,9 @@ export class GameState {
     this.levelStartScore = 0;
     this.isRescueActive = false;
     this.rescueUsedThisRun = false;
+    this.pausedFromStatus = null;
+    this.mapMessage = '';
+    this.mapMessageTimer = 0;
     this.highScore = HighScoreStore.get(this.mode);
     this.isNewRecord = false;
     this.carouselItems = this.getItemsForCurrentLevel();
@@ -288,6 +319,9 @@ export class GameState {
     this.levelStartScore = 0;
     this.isRescueActive = false;
     this.rescueUsedThisRun = false;
+    this.pausedFromStatus = null;
+    this.mapMessage = '';
+    this.mapMessageTimer = 0;
     this.highScore = HighScoreStore.get(this.mode);
     this.isNewRecord = false;
     this.carouselItems = this.getItemsForCurrentLevel();
@@ -618,6 +652,11 @@ export class GameState {
   }
 
   update(dt, inputState) {
+    if (this.mapMessageTimer > 0) {
+      this.mapMessageTimer = Math.max(0, this.mapMessageTimer - dt);
+    }
+    if (this.status === GAME_STATUS.PAUSED) return;
+
     if (this.status === GAME_STATUS.PLANE_STUNT) {
       this.stuntTimer += dt;
       const progress = Math.min(1, this.stuntTimer / this.stuntDuration);

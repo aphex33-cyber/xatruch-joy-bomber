@@ -3,6 +3,47 @@
  * Lógica pura sin dependencias de UI o librerías externas.
  */
 
+export const OFFICIAL_TITLE = 'Xatruch Joy Bomber';
+
+export const HONDURAS_CITIES = [
+  { id: 'TEGUCIGALPA', name: 'Tegucigalpa', nx: 0.48, ny: 0.65, stageIndex: 0, playable: true },
+  { id: 'SPS', name: 'San Pedro Sula', nx: 0.30, ny: 0.30, stageIndex: 1, playable: true },
+  { id: 'COPAN', name: 'Copán', nx: 0.14, ny: 0.45, stageIndex: 2, playable: false },
+  { id: 'GUARIZAMA', name: 'Guarizama', nx: 0.63, ny: 0.50, stageIndex: 3, playable: false },
+  { id: 'COMAYAGUA', name: 'Comayagua', nx: 0.40, ny: 0.56, stageIndex: 4, playable: false },
+  { id: 'JESUS_DE_OTORO', name: 'Jesús de Otoro', nx: 0.31, ny: 0.60, stageIndex: 5, playable: false }
+];
+
+export const BOSS_WEAPONS = [
+  { id: 'BULLET', name: 'Balas', icon: '🔫', color: '#fbbf24', speed: 520 },
+  { id: 'FIRE', name: 'Fuego', icon: '🔥', color: '#f97316', speed: 460 },
+  { id: 'WATER', name: 'Agua', icon: '💧', color: '#38bdf8', speed: 470 },
+  { id: 'ICE', name: 'Hielo', icon: '❄️', color: '#a5f3fc', speed: 450 }
+];
+
+export const BOSS_CONFIGS = {
+  TEGUCIGALPA: {
+    id: 'TEGUCIGALPA',
+    name: 'Monstruo del Tráfico Capitalino',
+    maxHp: 220,
+    effectiveWeapons: ['BULLET', 'FIRE', 'ICE'],
+    enrageWeapons: [],
+    attacks: ['¡PIIIP! 📢', '¡MUEVE PUES! 🤬', '¡2 HORAS EN EL ANILLO!', '¡NO HAY PASO! 🚗'],
+    victoryQuote:
+      'Oh serpiente de mil cabezas e igual número de colas, criatura mítica de humo y hierro, para tu deshonra caes bajo la espada de este general caído que se levanta, ¡habitantes de esta villa sean libres!'
+  },
+  SPS: {
+    id: 'SPS',
+    name: 'Titán de Fuego y Calor',
+    maxHp: 240,
+    effectiveWeapons: ['WATER', 'ICE'],
+    enrageWeapons: ['FIRE', 'BULLET'],
+    attacks: ['☀️ ¡RAYO DE CALOR!', '🔥 ¡FURIA DEL VALLE!', '🥵 ¡SOFOCO TOTAL!', '💥 ¡LLAMARADA!'],
+    victoryQuote:
+      'Apagose el fuego de tus entrañas, ciudad de los zorzales y de la gente que goza del trabajo.'
+  }
+};
+
 export const GAME_MODES = {
   STORY: 'STORY',
   CITY: 'CITY',

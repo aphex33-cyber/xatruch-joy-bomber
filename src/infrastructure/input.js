@@ -9,7 +9,9 @@ export class InputHandler {
 
     this.state = {
       speedUp: false,
-      slowDown: false
+      slowDown: false,
+      moveUp: false,
+      moveDown: false
     };
 
     this.initKeyboard();
@@ -21,13 +23,23 @@ export class InputHandler {
         e.preventDefault();
       }
 
-      // Velocidad continua (A / D o Flechas Arriba / Abajo) sí puede mantenerse presionada
-      if (e.code === 'KeyD' || e.code === 'ArrowUp') {
+      // Velocidad / Movimiento vertical continuo (A/D, W/S o Flechas)
+      if (e.code === 'KeyD') {
         this.state.speedUp = true;
         return;
       }
-      if (e.code === 'KeyA' || e.code === 'ArrowDown') {
+      if (e.code === 'KeyA') {
         this.state.slowDown = true;
+        return;
+      }
+      if (e.code === 'KeyW' || e.code === 'ArrowUp') {
+        this.state.speedUp = true;
+        this.state.moveUp = true;
+        return;
+      }
+      if (e.code === 'KeyS' || e.code === 'ArrowDown') {
+        this.state.slowDown = true;
+        this.state.moveDown = true;
         return;
       }
 
@@ -54,10 +66,16 @@ export class InputHandler {
     });
 
     window.addEventListener('keyup', (e) => {
-      if (e.code === 'KeyD' || e.code === 'ArrowUp') {
+      if (e.code === 'KeyD') {
         this.state.speedUp = false;
-      } else if (e.code === 'KeyA' || e.code === 'ArrowDown') {
+      } else if (e.code === 'KeyA') {
         this.state.slowDown = false;
+      } else if (e.code === 'KeyW' || e.code === 'ArrowUp') {
+        this.state.speedUp = false;
+        this.state.moveUp = false;
+      } else if (e.code === 'KeyS' || e.code === 'ArrowDown') {
+        this.state.slowDown = false;
+        this.state.moveDown = false;
       }
     });
   }
@@ -70,7 +88,7 @@ export class InputHandler {
       const clickX = (e.clientX - rect.left) * scaleX;
       const clickY = (e.clientY - rect.top) * scaleY;
 
-      // Permitir manejo personalizado (ej. tarjetas del menú de inicio)
+      // Permitir manejo personalizado (ej. Intro, Mapa, Tarjetas de inicio, Controles Boss)
       if (this.onCanvasClick && this.onCanvasClick(clickX, clickY)) {
         return;
       }
@@ -86,5 +104,13 @@ export class InputHandler {
 
       this.onActionTrigger();
     });
+
+    const stopBossMove = () => {
+      this.state.moveUp = false;
+      this.state.moveDown = false;
+    };
+    canvas.addEventListener('pointerup', stopBossMove);
+    canvas.addEventListener('pointercancel', stopBossMove);
+    canvas.addEventListener('pointerleave', stopBossMove);
   }
 }

@@ -45,7 +45,31 @@ export class ProgressStore {
     } catch {
       // Ignorar
     }
-    return { stageStars: {}, selectedPlaneId: 'CLASSIC', storyCompleted: false };
+    return {
+      stageStars: {},
+      selectedPlaneId: 'CLASSIC',
+      storyCompleted: false,
+      unlockedCities: ['TEGUCIGALPA']
+    };
+  }
+
+  static getUnlockedCities() {
+    const data = this.load();
+    return Array.isArray(data.unlockedCities) && data.unlockedCities.length > 0
+      ? data.unlockedCities
+      : ['TEGUCIGALPA'];
+  }
+
+  static unlockCity(cityId) {
+    const data = this.load();
+    if (!Array.isArray(data.unlockedCities) || data.unlockedCities.length === 0) {
+      data.unlockedCities = ['TEGUCIGALPA'];
+    }
+    if (!data.unlockedCities.includes(cityId)) {
+      data.unlockedCities.push(cityId);
+      this.save(data);
+    }
+    return data.unlockedCities;
   }
 
   static save(data) {

@@ -615,4 +615,169 @@ export class SpriteLibrary {
 
     ctx.restore();
   }
+
+  /**
+   * Pose heroica de cuerpo entero del General Xatruch con espada y banda azul-blanca
+   */
+  drawXatruchHeroic(ctx, x, y, scale = 1, time = 0) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+
+    // Capa azul-blanca ondeando atrás
+    const wave = Math.sin(time * 6) * 4;
+    ctx.fillStyle = '#0284c7';
+    ctx.beginPath();
+    ctx.moveTo(-10, -48);
+    ctx.lineTo(-34, -18 + wave);
+    ctx.lineTo(-26, 10 + wave);
+    ctx.lineTo(-8, -10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(-26, -16 + wave * 0.5, 14, 7);
+
+    // Botas y pantalones oscuros en pose firme
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(-14, -8, 10, 26);
+    ctx.fillRect(4, -8, 10, 26);
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(-15, 10, 12, 8);
+    ctx.fillRect(3, 10, 12, 8);
+
+    // Levita oscura siglo XIX + banda presidencial/militar
+    ctx.fillStyle = '#1f2937';
+    ctx.fillRect(-16, -48, 32, 42);
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-16, -48, 32, 42);
+
+    // Banda celeste y blanca cruzada en el pecho
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.moveTo(-14, -48);
+    ctx.lineTo(14, -14);
+    ctx.lineTo(14, -22);
+    ctx.lineTo(-6, -48);
+    ctx.closePath();
+    ctx.fill();
+
+    // Brazo derecho levantado sosteniendo espada reluciente
+    ctx.fillStyle = '#1f2937';
+    ctx.fillRect(14, -56, 10, 16);
+    ctx.fillStyle = '#fbbf24'; // Empuñadura dorada
+    ctx.fillRect(16, -64, 12, 4);
+    ctx.fillRect(20, -64, 4, 10);
+    ctx.fillStyle = '#e2e8f0'; // Hoja de la espada
+    ctx.fillRect(20, -98, 4, 34);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(21, -98, 1.5, 34);
+
+    // Retrato detallado del General Xatruch
+    ctx.drawImage(this.xatruchSprite, -18, -82, 36, 36);
+    ctx.restore();
+  }
+
+  /**
+   * Boss 1 (Tegucigalpa): Monstruo Gigante formado por carros del tráfico
+   */
+  drawTegucigalpaBoss(ctx, boss, time) {
+    const x = boss.x;
+    const y = boss.y;
+    const w = boss.width;
+    const h = boss.height;
+    const shake = Math.sin(time * 24) * 2;
+
+    ctx.save();
+    if (boss.hitFlash > 0) ctx.filter = 'brightness(1.8)';
+
+    // Piernas (dos camionetas/sedanes verticales)
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(x + w * 0.14, y + h * 0.65, w * 0.28, h * 0.35);
+    ctx.fillRect(x + w * 0.56, y + h * 0.65, w * 0.28, h * 0.35);
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillRect(x + w * 0.17, y + h * 0.68, w * 0.22, h * 0.28);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(x + w * 0.59, y + h * 0.68, w * 0.22, h * 0.28);
+
+    // Torso (autobús / rapidito + sedanes apilados)
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(x + w * 0.08, y + h * 0.26, w * 0.84, h * 0.42);
+    ctx.fillStyle = '#facc15'; // Taxi amarillo gigante en el pecho
+    ctx.fillRect(x + w * 0.12, y + h * 0.30, w * 0.76, h * 0.34);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(x + w * 0.22, y + h * 0.38, w * 0.56, h * 0.12); // Parrilla amenazante
+
+    // Brazos hechos de taxis que golpean
+    const armWave = Math.sin(time * 8) * 6;
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(x - w * 0.18, y + h * 0.32 + armWave, w * 0.26, h * 0.18);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(x - w * 0.20, y + h * 0.34 + armWave, 6, 12);
+
+    // Cabeza (busito con faros rojos furiosos como ojos y humo)
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(x + w * 0.22 + shake, y, w * 0.56, h * 0.28);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(x + w * 0.26 + shake, y + 4, w * 0.48, h * 0.22);
+    // Ojos rojos brillantes (faros)
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(x + w * 0.30 + shake, y + h * 0.09, 10, 8);
+    ctx.fillRect(x + w * 0.56 + shake, y + h * 0.09, 10, 8);
+    // Boca de parachoques gritando
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(x + w * 0.34 + shake, y + h * 0.19, w * 0.28, 6);
+
+    ctx.restore();
+  }
+
+  /**
+   * Boss 2 (SPS): Monstruo colosal de Fuego y Calor
+   */
+  drawSpsBoss(ctx, boss, time) {
+    const x = boss.x;
+    const y = boss.y;
+    const w = boss.width;
+    const h = boss.height;
+    const scaleBoost = boss.enrageFlash > 0 ? 1.12 : 1.0;
+
+    ctx.save();
+    ctx.translate(x + w / 2, y + h / 2);
+    ctx.scale(scaleBoost, scaleBoost);
+    ctx.translate(-(x + w / 2), -(y + h / 2));
+
+    if (boss.hitFlash > 0) ctx.filter = 'brightness(1.8)';
+
+    // Aura de calor sofocante
+    ctx.fillStyle = 'rgba(249, 115, 22, 0.28)';
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y + h / 2, w * 0.72, h * 0.65, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Llamas exteriores danzantes
+    for (let i = 0; i < 6; i++) {
+      const fx = x + (i / 5) * (w - 14);
+      const fh = 18 + Math.sin(time * 16 + i * 1.4) * 10;
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(fx, y - fh + 16, 14, h * 0.4 + fh);
+    }
+
+    // Cuerpo de magma y fuego 16-bit
+    ctx.fillStyle = '#991b1b';
+    ctx.fillRect(x + 6, y + 18, w - 12, h - 22);
+    ctx.fillStyle = '#f97316';
+    ctx.fillRect(x + 14, y + 26, w - 28, h - 38);
+    ctx.fillStyle = '#fde047'; // Núcleo ardiente
+    ctx.fillRect(x + 24, y + 42, w - 48, h - 64);
+
+    // Ojos furiosos blanco-amarillos
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x + w * 0.24, y + h * 0.28, 12, 10);
+    ctx.fillRect(x + w * 0.58, y + h * 0.28, 12, 10);
+    // Boca de fuego rugiendo
+    ctx.fillStyle = '#450a0a';
+    ctx.fillRect(x + w * 0.28, y + h * 0.48, w * 0.44, 16);
+
+    ctx.restore();
+  }
 }

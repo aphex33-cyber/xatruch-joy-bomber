@@ -1,4 +1,11 @@
-import { BIOME_TYPES, GAME_MODES, ITEMS_CATALOG } from '../domain/types.js';
+import {
+  BIOME_TYPES,
+  BOSS_WEAPONS,
+  GAME_MODES,
+  HONDURAS_CITIES,
+  ITEMS_CATALOG,
+  OFFICIAL_TITLE
+} from '../domain/types.js';
 import { GAME_STATUS } from '../application/game_state.js';
 import { SpriteLibrary } from './sprites.js';
 
@@ -12,6 +19,9 @@ export class CanvasRenderer {
     this.mountainOffset = 0;
     this.elapsedTime = 0;
     this.startModeButtons = [];
+    this.mapCityButtons = [];
+    this.bossMoveButtons = [];
+    this.bossWeaponButtons = [];
   }
 
   resize() {
@@ -48,6 +58,24 @@ export class CanvasRenderer {
     }
 
     ctx.clearRect(0, 0, w, h);
+
+    if (gameState.status === GAME_STATUS.INTRO) {
+      this.renderIntroScreen(ctx, w, h, gameState);
+      ctx.restore();
+      return;
+    }
+
+    if (gameState.status === GAME_STATUS.STORY_MAP) {
+      this.renderHondurasMapScreen(ctx, w, h, gameState);
+      ctx.restore();
+      return;
+    }
+
+    if (gameState.status === GAME_STATUS.BOSS_FIGHT) {
+      this.renderBossFight(ctx, w, h, gameState);
+      ctx.restore();
+      return;
+    }
 
     const effMode = gameState.getEffectiveMode ? gameState.getEffectiveMode() : gameState.mode;
 
@@ -116,6 +144,8 @@ export class CanvasRenderer {
       // Pirueta silenciosa sin texto sobre la pantalla
     } else if (gameState.status === GAME_STATUS.RESCUE_PROMPT) {
       this.renderRescuePromptScreen(ctx, w, h, gameState);
+    } else if (gameState.status === GAME_STATUS.BOSS_VICTORY) {
+      this.renderBossVictoryScreen(ctx, w, h, gameState);
     } else if (gameState.status === GAME_STATUS.LEVEL_COMPLETE) {
       this.renderLevelCompleteScreen(ctx, w, h, gameState);
     } else if (gameState.status === GAME_STATUS.VICTORY) {
@@ -1502,5 +1532,398 @@ export class CanvasRenderer {
     ctx.fillStyle = '#22c55e';
     ctx.font = 'bold 14px "JetBrains Mono", monospace';
     ctx.fillText('🔄 PRESIONA [ESPACIO] O TOCA PARA REINTENTAR', w / 2, h / 2 + 126);
+  }
+
+  /**
+   * Globo de diálogo estilo cómic con ajuste automático de líneas
+   */
+  drawComicBubble(ctx, x, y, maxW, text, fontSize = 12) {
+    ctx.save();
+    ctx.font = `600 ${fontSize}px "Inter", sans-serif`;
+    const words = text.split(' ');
+    const lines = [];
+    let current = '';
+
+    for (const word of words) {
+      const test = current ? `${current} ${word}` : word;
+      if (ctx.measureText(test).width > maxW - 24) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = test;
+      }
+    }
+    if (current) lines.push(current);
+
+    const lineH = fontSize + 5;
+    const boxH = lines.length * lineH + 18;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.roundRect(x, y, maxW, boxH, 10);
+    ctx.fill();
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.fillStyle = '#0f172a';
+    ctx.textAlign = 'left';
+    lines.forEach((line, i) => {
+      ctx.fillText(line, x + 12, y + 20 + i * lineH);
+    });
+    ctx.restore();
+    return boxH;
+  }
+
+  /**
+   * Portada Heroica + Intro estilo cómic del General Xatruch
+   */
+  renderIntroScreen(ctx, w, h, gameState) {
+    // Fondo épico amanecer 16-bit
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, '#090d16');
+    grad.addColorStop(0.55, '#1e3a8a');
+    grad.addColorStop(1, '#0284c7');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Estrellas arcade titilantes
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 30; i++) {
+      const sx = (i * 97 + 23) % w;
+      const sy = (i * 53 + 11) % (h * 0.55);
+      const sz = Math.sin(this.elapsedTime * 4 + i) > 0.3 ? 2.5 : 1.5;
+      ctx.fillRect(sx, sy, sz, sz);
+    }
+
+    // Título oficial estilo Arcade con destello animado
+    const isMobile = w < 620;
+    const titlePulse = Math.sin(this.elapsedTime * 4) * 2;
+    ctx.textAlign = 'center';
+    ctx.font = `900 ${isMobile ? 22 : 34}px "JetBrains Mono", monospace`;
+    ctx.fillStyle = '#0f172a';
+    ctx.fillText(OFFICIAL_TITLE.toUpperCase(), w / 2 + 3, (isMobile ? 42 : 56) + 3 + titlePulse * 0.3);
+    ctx.fillStyle = '#facc15';
+    ctx.fillText(OFFICIAL_TITLE.toUpperCase(), w / 2, (isMobile ? 42 : 56) + titlePulse * 0.3);
+
+    const step = gameState.introStep || 0;
+    if (step === 0) {
+      // Escena 1: Pose heroica de cuerpo entero + globo cómic
+      const heroX = isMobile ? w * 0.24 : w * 0.22;
+      const heroY = isMobile ? h * 0.72 : h * 0.74;
+      this.sprites.drawXatruchHeroic(ctx, heroX, heroY, isMobile ? 1.15 : 1.55, this.elapsedTime);
+
+      const bubbleX = isMobile ? w * 0.40 : w * 0.36;
+      const bubbleW = Math.min(440, w - bubbleX - 18);
+      const quote =
+        'Para mi ventura propia y desventura de mis enemigos, me ha revivido IA, tomo como destino a bien traer felicidad a mi pueblo, que ha sido abandonado a su suerte, y de la cual, veo con tristeza, no goza.';
+      this.drawComicBubble(ctx, bubbleX, isMobile ? 76 : 104, bubbleW, quote, isMobile ? 11 : 13);
+    } else {
+      // Escena 2: Sube al avión y exclama
+      const planePreview = {
+        x: (isMobile ? w * 0.16 : w * 0.20) + Math.sin(this.elapsedTime * 3) * 8,
+        y: (isMobile ? h * 0.56 : h * 0.54) + Math.cos(this.elapsedTime * 4) * 5,
+        tilt: -0.05,
+        hatchOpenTimer: 0
+      };
+      this.sprites.drawPlane(ctx, planePreview, this.propellerAngle, this.elapsedTime, gameState.selectedPlaneId);
+
+      const bubbleX = isMobile ? w * 0.34 : w * 0.36;
+      const bubbleW = Math.min(420, w - bubbleX - 18);
+      const quote = '¡Se me entrega este corcel, que he de cabalgar por estos cielos de límpido azul!';
+      this.drawComicBubble(ctx, bubbleX, isMobile ? 96 : 120, bubbleW, quote, isMobile ? 12 : 14);
+    }
+
+    ctx.fillStyle = '#4ade80';
+    ctx.font = `bold ${isMobile ? 12 : 14}px "JetBrains Mono", monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText(
+      step === 0 ? '▶ TOCA O PRESIONA [ESPACIO] PARA CONTINUAR' : '▶ TOCA O PRESIONA [ESPACIO] PARA VER MODOS DE JUEGO',
+      w / 2,
+      h - 22
+    );
+  }
+
+  /**
+   * Mapa de Honduras del Modo Historia con 6 ciudades (Tegucigalpa desbloqueada al inicio)
+   */
+  renderHondurasMapScreen(ctx, w, h, gameState) {
+    // Mar Caribe / Océano de fondo
+    ctx.fillStyle = '#0c4a6e';
+    ctx.fillRect(0, 0, w, h);
+
+    const isMobile = w < 620;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#facc15';
+    ctx.font = `bold ${isMobile ? 16 : 22}px "JetBrains Mono", monospace`;
+    ctx.fillText('🗺️ MAPA DE HONDURAS — MODO HISTORIA', w / 2, isMobile ? 28 : 34);
+
+    // Silueta estilizada 16-bit de Honduras
+    const mapX = w * 0.10;
+    const mapY = 50;
+    const mapW = w * 0.80;
+    const mapH = h - 105;
+
+    ctx.fillStyle = '#15803d';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(mapX + mapW * 0.08, mapY + mapH * 0.48); // Occidente / Copán
+    ctx.lineTo(mapX + mapW * 0.24, mapY + mapH * 0.24); // Cortés / SPS
+    ctx.lineTo(mapX + mapW * 0.48, mapY + mapH * 0.20); // Atlántida / La Ceiba
+    ctx.lineTo(mapX + mapW * 0.72, mapY + mapH * 0.26); // Colón
+    ctx.lineTo(mapX + mapW * 0.94, mapY + mapH * 0.44); // Gracias a Dios
+    ctx.lineTo(mapX + mapW * 0.78, mapY + mapH * 0.68); // El Paraíso / Olancho
+    ctx.lineTo(mapX + mapW * 0.56, mapY + mapH * 0.78); // Francisco Morazán / Sur
+    ctx.lineTo(mapX + mapW * 0.44, mapY + mapH * 0.92); // Choluteca / Golfo de Fonseca
+    ctx.lineTo(mapX + mapW * 0.32, mapY + mapH * 0.74); // La Paz / Intibucá
+    ctx.lineTo(mapX + mapW * 0.16, mapY + mapH * 0.62); // Lempira / Ocotepeque
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Rutas punteadas conectando las ciudades
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    HONDURAS_CITIES.forEach((city, idx) => {
+      const cx = mapX + city.nx * mapW;
+      const cy = mapY + city.ny * mapH;
+      if (idx === 0) ctx.moveTo(cx, cy);
+      else ctx.lineTo(cx, cy);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Nodos de las 6 ciudades
+    this.mapCityButtons = [];
+    const unlocked = gameState.unlockedCities || ['TEGUCIGALPA'];
+
+    HONDURAS_CITIES.forEach((city) => {
+      const cx = mapX + city.nx * mapW;
+      const cy = mapY + city.ny * mapH;
+      const isUnlocked = unlocked.includes(city.id);
+
+      this.mapCityButtons.push({
+        city,
+        isUnlocked,
+        x: cx - 32,
+        y: cy - 22,
+        w: 64,
+        h: 44
+      });
+
+      const pulse = isUnlocked ? 1 + Math.sin(this.elapsedTime * 6) * 0.15 : 1;
+      ctx.fillStyle = isUnlocked ? '#facc15' : '#334155';
+      ctx.beginPath();
+      ctx.arc(cx, cy, (isMobile ? 9 : 11) * pulse, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.font = `${isMobile ? 10 : 12}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(isUnlocked ? '✈️' : '🔒', cx, cy + 4);
+
+      // Etiqueta de ciudad
+      ctx.font = `bold ${isMobile ? 9 : 11}px "JetBrains Mono", monospace`;
+      const label = city.name;
+      const tw = ctx.measureText(label).width + 8;
+      ctx.fillStyle = isUnlocked ? 'rgba(15, 23, 42, 0.9)' : 'rgba(15, 23, 42, 0.65)';
+      ctx.fillRect(cx - tw / 2, cy + 14, tw, 15);
+      ctx.fillStyle = isUnlocked ? '#38bdf8' : '#94a3b8';
+      ctx.fillText(label, cx, cy + 25);
+    });
+
+    ctx.fillStyle = '#4ade80';
+    ctx.font = `bold ${isMobile ? 11 : 13}px "JetBrains Mono", monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText('TOCA UNA CIUDAD DESBLOQUEADA O PRESIONA [ESPACIO] PARA DESPEGAR', w / 2, h - 16);
+  }
+
+  /**
+   * Batalla contra Boss de Ciudad (Disparo de frente + Controles Izq/Der)
+   */
+  renderBossFight(ctx, w, h, gameState) {
+    const be = gameState.bossEngine;
+    const boss = be.boss;
+    const isSps = boss.id === 'SPS';
+
+    // Cielo dramático de batalla
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, '#090d16');
+    grad.addColorStop(0.6, isSps ? '#7f1d1d' : '#1e293b');
+    grad.addColorStop(1, isSps ? '#ea580c' : '#334155');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Barra superior de Boss HP & Vidas del avión
+    const hudH = w < 620 ? 64 : 54;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    ctx.fillRect(0, 0, w, hudH);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(0, hudH - 2, w, 2);
+
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 12px "JetBrains Mono", monospace';
+    ctx.fillStyle = '#f43f5e';
+    ctx.fillText('❤️'.repeat(Math.max(0, be.lives)), 12, 24);
+
+    // Barra de poder del Boss (indica cuánto poder se le ha quitado)
+    const barW = Math.min(340, w - 180);
+    const barX = (w - barW) / 2;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#facc15';
+    ctx.font = `bold ${w < 620 ? 10 : 12}px "JetBrains Mono", monospace`;
+    ctx.fillText(`👹 ${be.config.name.toUpperCase()}`, w / 2, 17);
+
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(barX, 24, barW, 14);
+    const hpPct = Math.max(0, boss.hp / boss.maxHp);
+    ctx.fillStyle = isSps ? '#f97316' : '#ef4444';
+    ctx.fillRect(barX, 24, barW * hpPct, 14);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(barX, 24, barW, 14);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 10px "JetBrains Mono", monospace';
+    ctx.fillText(`${Math.round(boss.hp)} / ${boss.maxHp} HP`, w / 2, 35);
+
+    if (isSps) {
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = '10px "JetBrains Mono", monospace';
+      ctx.fillText('💡 USA AGUA Y HIELO (¡FUEGO Y BALAS LO ENCIENDEN!)', w / 2, hudH - 6);
+    }
+
+    // Dibujar Avión (parpadea si acaba de recibir golpe)
+    const blink = be.invulnTimer > 0 && Math.floor(this.elapsedTime * 16) % 2 === 0;
+    if (!blink) {
+      this.sprites.drawPlane(ctx, gameState.plane, this.propellerAngle, this.elapsedTime, gameState.selectedPlaneId);
+    }
+
+    // Dibujar Boss
+    if (isSps) {
+      this.sprites.drawSpsBoss(ctx, boss, this.elapsedTime);
+    } else {
+      this.sprites.drawTegucigalpaBoss(ctx, boss, this.elapsedTime);
+    }
+
+    // Disparos del jugador
+    for (const s of be.playerShots) {
+      ctx.fillStyle = s.color;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.font = '14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(s.icon, s.x, s.y);
+    }
+
+    // Ataques del Boss (gritos, bocinazos, insultos, rayos de calor)
+    for (const atk of be.bossAttacks) {
+      ctx.save();
+      ctx.font = 'bold 10px "JetBrains Mono", monospace';
+      const tw = ctx.measureText(atk.text).width + 12;
+      ctx.fillStyle = atk.isHeat ? '#ef4444' : '#fef08a';
+      ctx.beginPath();
+      ctx.roundRect(atk.x - tw / 2, atk.y - 10, tw, 20, 6);
+      ctx.fill();
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = atk.isHeat ? '#ffffff' : '#0f172a';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(atk.text, atk.x, atk.y);
+      ctx.restore();
+    }
+
+    // Partículas y textos flotantes
+    this.renderParticles(ctx, gameState.dropEngine.particles);
+    this.renderFloatingTexts(ctx, gameState.dropEngine.floatingTexts);
+
+    // CONTROLES EN PANTALLA:
+    // Izquierda: Subir y Bajar el avión
+    const btnSize = w < 620 ? 44 : 50;
+    const upBox = { dir: -1, x: 12, y: h - btnSize * 2 - 22, w: btnSize, h: btnSize };
+    const downBox = { dir: 1, x: 12, y: h - btnSize - 12, w: btnSize, h: btnSize };
+    this.bossMoveButtons = [upBox, downBox];
+
+    [upBox, downBox].forEach((b) => {
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.beginPath();
+      ctx.roundRect(b.x, b.y, b.w, b.h, 8);
+      ctx.fill();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 18px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(b.dir === -1 ? '▲' : '▼', b.x + b.w / 2, b.y + b.h / 2);
+    });
+
+    // Derecha: 4 Opciones de tiro (Balas, Fuego, Agua, Hielo)
+    this.bossWeaponButtons = [];
+    const wGap = 6;
+    const wSize = w < 620 ? 42 : 48;
+    const wTotalH = BOSS_WEAPONS.length * wSize + (BOSS_WEAPONS.length - 1) * wGap;
+    const wStartX = w - wSize - 12;
+    const wStartY = Math.max(hudH + 8, h - wTotalH - 12);
+
+    BOSS_WEAPONS.forEach((wp, idx) => {
+      const wy = wStartY + idx * (wSize + wGap);
+      const isSel = be.selectedWeaponIndex === idx;
+      this.bossWeaponButtons.push({ idx, x: wStartX, y: wy, w: wSize, h: wSize });
+
+      ctx.fillStyle = isSel ? '#0f172a' : 'rgba(15, 23, 42, 0.85)';
+      ctx.beginPath();
+      ctx.roundRect(wStartX, wy, wSize, wSize, 8);
+      ctx.fill();
+      ctx.strokeStyle = isSel ? wp.color : '#475569';
+      ctx.lineWidth = isSel ? 3 : 1.5;
+      ctx.stroke();
+
+      ctx.font = '19px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(wp.icon, wStartX + wSize / 2, wy + wSize / 2 - 3);
+
+      ctx.font = 'bold 8px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillText(wp.name.toUpperCase(), wStartX + wSize / 2, wy + wSize - 6);
+    });
+  }
+
+  /**
+   * Discurso victorioso del General Xatruch tras derrotar al Boss de la ciudad
+   */
+  renderBossVictoryScreen(ctx, w, h, gameState) {
+    ctx.fillStyle = 'rgba(9, 13, 22, 0.92)';
+    ctx.fillRect(0, 0, w, h);
+
+    const isMobile = w < 620;
+    this.sprites.drawXatruchHeroic(ctx, isMobile ? w * 0.20 : w * 0.22, h * 0.72, isMobile ? 1.15 : 1.5, this.elapsedTime);
+
+    const bubbleX = isMobile ? w * 0.36 : w * 0.35;
+    const bubbleW = Math.min(450, w - bubbleX - 18);
+    const quote = gameState.bossEngine.config.victoryQuote;
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#4ade80';
+    ctx.font = `bold ${isMobile ? 16 : 22}px "JetBrains Mono", monospace`;
+    ctx.fillText('🏆 ¡JEFE DERROTADO!', w / 2, isMobile ? 38 : 48);
+
+    this.drawComicBubble(ctx, bubbleX, isMobile ? 64 : 88, bubbleW, quote, isMobile ? 11 : 13);
+
+    ctx.fillStyle = '#facc15';
+    ctx.font = `bold ${isMobile ? 12 : 14}px "JetBrains Mono", monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText('▶ TOCA O PRESIONA [ESPACIO] PARA CONTINUAR', w / 2, h - 22);
   }
 }

@@ -123,8 +123,26 @@ window.addEventListener('DOMContentLoaded', () => {
     if (isMobileDevice() && window.innerWidth > window.innerHeight && !isNativeFullscreen()) {
       requestRealFullscreen();
     }
-    if (gameState.status === GAME_STATUS.START) {
-      gameState.startGame(gameState.mode);
+    if (gameState.status === GAME_STATUS.INTRO) {
+      audio.playCarouselClick();
+      gameState.advanceIntro();
+    } else if (gameState.status === GAME_STATUS.START) {
+      if (gameState.mode === GAME_MODES.STORY) {
+        gameState.openStoryMap();
+      } else {
+        gameState.startGame(gameState.mode);
+      }
+      syncModeButtonLabel();
+    } else if (gameState.status === GAME_STATUS.STORY_MAP) {
+      // Despegar en la última ciudad jugable desbloqueada
+      const unlocked = gameState.unlockedCities || ['TEGUCIGALPA'];
+      const stageIdx = unlocked.includes('SPS') ? 1 : 0;
+      gameState.startStoryStage(stageIdx);
+      syncModeButtonLabel();
+    } else if (gameState.status === GAME_STATUS.BOSS_FIGHT) {
+      gameState.bossEngine.fireWeapon(gameState.plane);
+    } else if (gameState.status === GAME_STATUS.BOSS_VICTORY) {
+      gameState.finishBossVictory();
       syncModeButtonLabel();
     } else if (gameState.status === GAME_STATUS.RESCUE_PROMPT) {
       gameState.startRescueMission();
@@ -150,6 +168,46 @@ window.addEventListener('DOMContentLoaded', () => {
   };
 
   const handleCanvasClick = (clickX, clickY) => {
+    if (gameState.status === GAME_STATUS.STORY_MAP) {
+      for (const btn of renderer.mapCityButtons) {
+        if (
+          clickX >= btn.x &&
+          clickX <= btn.x + btn.w &&
+          clickY >= btn.y &&
+          clickY <= btn.y + btn.h
+        ) {
+          audio.ensureContext();
+          if (btn.isUnlocked && btn.city.playable) {
+            audio.playCarouselClick();
+            gameState.startStoryStage(btn.city.stageIndex);
+            syncModeButtonLabel();
+          } else {
+            audio.playFail();
+          }
+          return true;
+        }
+      }
+      return false;
+    }
+
+    if (gameState.status === GAME_STATUS.BOSS_FIGHT) {
+      audio.ensureContext();
+      for (const b of renderer.bossMoveButtons) {
+        if (clickX >= b.x && clickX <= b.x + b.w && clickY >= b.y && clickY <= b.y + b.h) {
+          if (b.dir === -1) inputHandler.state.moveUp = true;
+          else inputHandler.state.moveDown = true;
+          return true;
+        }
+      }
+      for (const wb of renderer.bossWeaponButtons) {
+        if (clickX >= wb.x && clickX <= wb.x + wb.w && clickY >= wb.y && clickY <= wb.y + wb.h) {
+          gameState.bossEngine.fireWeapon(gameState.plane, wb.idx);
+          return true;
+        }
+      }
+      return false;
+    }
+
     if (gameState.status !== GAME_STATUS.START) return false;
 
     for (const btn of renderer.startModeButtons) {
@@ -164,7 +222,11 @@ window.addEventListener('DOMContentLoaded', () => {
         if (isMobileDevice() && window.innerWidth > window.innerHeight && !isNativeFullscreen()) {
           requestRealFullscreen();
         }
-        gameState.startGame(btn.mode);
+        if (btn.mode === GAME_MODES.STORY) {
+          gameState.openStoryMap();
+        } else {
+          gameState.startGame(btn.mode);
+        }
         syncModeButtonLabel();
         return true;
       }
@@ -174,10 +236,20 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const handleSelectIndex = (idx) => {
     audio.ensureContext();
+    if (gameState.status === GAME_STATUS.BOSS_FIGHT) {
+      if (idx >= 0 && idx < 4) {
+        gameState.bossEngine.fireWeapon(gameState.plane, idx);
+      }
+      return;
+    }
     if (gameState.status === GAME_STATUS.START) {
       const modes = [GAME_MODES.STORY, GAME_MODES.CITY, GAME_MODES.GEOMETRY, GAME_MODES.HIGHWAY];
       if (idx >= 0 && idx < modes.length) {
-        gameState.startGame(modes[idx]);
+        if (modes[idx] === GAME_MODES.STORY) {
+          gameState.openStoryMap();
+        } else {
+          gameState.startGame(modes[idx]);
+        }
         syncModeButtonLabel();
         audio.playCarouselClick();
       }
@@ -230,8 +302,12 @@ window.addEventListener('DOMContentLoaded', () => {
     return result;
   };
 
-  // Audio de pirueta y Modo Salto en Carretera
+  // Audio de pirueta, Boss y Modo Salto en Carretera
   gameState.onStuntStart = () => audio.playLevelStuntFanfare();
+  gameState.bossEngine.onShoot = () => audio.playCarouselClick();
+  gameState.bossEngine.onBossHit = () => audio.playSuccessJoy(2);
+  gameState.bossEngine.onBossEnrage = () => audio.playFail();
+  gameState.bossEngine.onPlayerHit = () => audio.playFail();
   gameState.highwayEngine.onJump = (isDouble) => audio.playJump(isDouble);
   gameState.highwayEngine.onStarCollected = () => audio.playStar();
   gameState.highwayEngine.onObstacleHit = () => audio.playFail();

@@ -3,6 +3,7 @@ import {
   BIOME_TYPES,
   DIFFICULTY_LEVELS,
   GAME_MODES,
+  HONDURAS_CITIES,
   ITEM_TYPES,
   ITEMS_CATALOG,
   LEVELS_CONFIG,
@@ -12,10 +13,15 @@ import {
 import { HighScoreStore, ProgressStore, calculateStars } from '../domain/score.js';
 import { DropEngine } from './drop_engine.js';
 import { HighwayEngine } from './highway_engine.js';
+import { BossEngine } from './boss_engine.js';
 
 export const GAME_STATUS = {
+  INTRO: 'INTRO',
   START: 'START',
+  STORY_MAP: 'STORY_MAP',
   PLAYING: 'PLAYING',
+  BOSS_FIGHT: 'BOSS_FIGHT',
+  BOSS_VICTORY: 'BOSS_VICTORY',
   PLANE_STUNT: 'PLANE_STUNT',
   RESCUE_PROMPT: 'RESCUE_PROMPT',
   LEVEL_COMPLETE: 'LEVEL_COMPLETE',
@@ -27,17 +33,20 @@ export class GameState {
   constructor(canvasWidth, canvasHeight) {
     this.canvasWidth = canvasWidth;
     this.canvasHeight = canvasHeight;
-    this.status = GAME_STATUS.START;
+    this.status = GAME_STATUS.INTRO;
+    this.introStep = 0; // 0 = Pose heroica, 1 = Sube al avión
     this.mode = GAME_MODES.STORY;
-    this.difficulty = 'EASY'; // Inicia en Fácil por defecto
+    this.difficulty = 'EASY';
     this.levelIndex = 0;
 
     this.dropEngine = new DropEngine();
     this.highwayEngine = new HighwayEngine(canvasWidth, canvasHeight);
+    this.bossEngine = new BossEngine(canvasWidth, canvasHeight);
 
     this.highScore = HighScoreStore.get(this.mode);
     this.isNewRecord = false;
     this.totalStars = ProgressStore.getTotalStars();
+    this.unlockedCities = ProgressStore.getUnlockedCities();
     this.lastEarnedStars = 0;
     this.selectedPlaneId = ProgressStore.getSelectedPlaneId();
 
@@ -94,6 +103,80 @@ export class GameState {
     this.geometrySlots = [];
 
     this.initWorld();
+  }
+
+  advanceIntro() {
+    if (this.introStep === 0) {
+      this.introStep = 1;
+    } else {
+      this.status = GAME_STATUS.START;
+    }
+  }
+
+  openStoryMap() {
+    this.mode = GAME_MODES.STORY;
+    this.unlockedCities = ProgressStore.getUnlockedCities();
+    this.status = GAME_STATUS.STORY_MAP;
+  }
+
+  startStoryStage(stageIdx = 0) {
+    this.mode = GAME_MODES.STORY;
+    this.levelIndex = stageIdx;
+    this.levelStartScore = 0;
+    this.isRescueActive = false;
+    this.rescueUsedThisRun = false;
+    this.highScore = HighScoreStore.get(this.mode);
+    this.isNewRecord = false;
+    this.carouselItems = this.getItemsForCurrentLevel();
+    this.selectedItemIndex = 0;
+    this.dropEngine.scorer.reset();
+    this.initWorld();
+    this.status = GAME_STATUS.PLAYING;
+  }
+
+  startBossFight(bossId) {
+    this.bossEngine.start(bossId, this.canvasWidth, this.canvasHeight);
+    this.plane.x = 64;
+    this.plane.y = this.canvasHeight * 0.45;
+    this.plane.tilt = 0;
+    this.status = GAME_STATUS.BOSS_FIGHT;
+  }
+
+  finishBossVictory() {
+    const stars = calculateStars(this.dropEngine.scorer.joy, this.dropEngine.scorer.maxCombo);
+    this.lastEarnedStars = stars;
+    const stageKey = `${this.mode}_${this.levelIndex}`;
+    this.totalStars = ProgressStore.recordStageStars(stageKey, stars);
+
+    // Desbloquear la siguiente ciudad en el mapa de Honduras
+    const levelCfg = this.getCurrentLevelConfig();
+    if (levelCfg.id === 'TEGUCIGALPA') {
+      this.unlockedCities = ProgressStore.unlockCity('SPS');
+    } else if (levelCfg.id === 'SPS') {
+      this.unlockedCities = ProgressStore.unlockCity('COPAN');
+    }
+
+    const totalLevels =
+      this.mode === GAME_MODES.STORY
+        ? STORY_STAGES.length
+        : (LEVELS_CONFIG[this.mode] || []).length;
+
+    if (this.levelIndex + 1 < totalLevels) {
+      this.stuntPendingStatus = GAME_STATUS.LEVEL_COMPLETE;
+    } else {
+      if (this.mode === GAME_MODES.STORY) {
+        ProgressStore.markStoryCompleted();
+      }
+      this.finalizeRunHighScore();
+      this.stuntPendingStatus = GAME_STATUS.VICTORY;
+    }
+
+    this.plane.x = 110;
+    this.stuntTimer = 0;
+    this.stuntOriginX = 110;
+    this.stuntOriginY = Math.max(84, Math.round(this.canvasHeight * 0.22));
+    this.status = GAME_STATUS.PLANE_STUNT;
+    if (this.onStuntStart) this.onStuntStart();
   }
 
   getLevelScore() {
@@ -333,6 +416,9 @@ export class GameState {
         this.highwayEngine.runner.y = this.highwayEngine.groundY;
       }
     }
+    if (this.bossEngine) {
+      this.bossEngine.onResize(newWidth, newHeight);
+    }
   }
 
   generateChunk(forcedType = null) {
@@ -558,6 +644,40 @@ export class GameState {
       return;
     }
 
+    if (this.status === GAME_STATUS.BOSS_FIGHT) {
+      const bossResult = this.bossEngine.update(
+        dt,
+        this.plane,
+        inputState,
+        this.dropEngine,
+        this.dropEngine.scorer
+      );
+
+      // Actualizar partículas y textos flotantes durante la batalla contra el Boss
+      for (let i = this.dropEngine.particles.length - 1; i >= 0; i--) {
+        const part = this.dropEngine.particles[i];
+        part.x += part.vx * dt;
+        part.y += part.vy * dt;
+        part.vy += (part.gravity ?? 300) * dt;
+        part.life -= dt;
+        if (part.life <= 0) this.dropEngine.particles.splice(i, 1);
+      }
+      for (let i = this.dropEngine.floatingTexts.length - 1; i >= 0; i--) {
+        const ft = this.dropEngine.floatingTexts[i];
+        ft.y += ft.vy * dt;
+        ft.life -= dt;
+        if (ft.life <= 0) this.dropEngine.floatingTexts.splice(i, 1);
+      }
+
+      if (bossResult === 'VICTORY') {
+        this.status = GAME_STATUS.BOSS_VICTORY;
+      } else if (bossResult === 'DEAD') {
+        this.finalizeRunHighScore();
+        this.status = GAME_STATUS.GAMEOVER;
+      }
+      return;
+    }
+
     if (this.status !== GAME_STATUS.PLAYING) return;
 
     this.levelTime += dt;
@@ -737,6 +857,12 @@ export class GameState {
       this.getLevelScore() >= levelCfg.targetScore &&
       this.dropEngine.scorer.joy >= levelCfg.minJoy
     ) {
+      // Si es ciudad con Boss (Tegucigalpa o SPS), iniciar batalla contra el Boss
+      if (this.getEffectiveMode() === GAME_MODES.CITY && (levelCfg.id === 'TEGUCIGALPA' || levelCfg.id === 'SPS')) {
+        this.startBossFight(levelCfg.id);
+        return;
+      }
+
       const stars = calculateStars(this.dropEngine.scorer.joy, this.dropEngine.scorer.maxCombo);
       this.lastEarnedStars = stars;
       const stageKey = `${this.mode}_${this.levelIndex}`;

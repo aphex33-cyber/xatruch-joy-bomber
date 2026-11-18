@@ -68,6 +68,7 @@ body {
 
 .header-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -288,6 +289,11 @@ canvas#gameCanvas {
     padding: 8px 12px;
     flex-wrap: wrap;
     gap: 8px;
+  }
+
+  .header-actions {
+    width: 100%;
+    gap: 6px;
   }
 
   .brand-badge {

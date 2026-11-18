@@ -125,6 +125,62 @@ window.addEventListener('DOMContentLoaded', () => {
       const diffCfg = gameState.getDifficultyConfig();
       btnDifficulty.textContent = `🎚️ ${t(`diff.${diffCfg.id}`)}`;
     }
+    const isEn = getLang() === 'en';
+    document.documentElement.lang = isEn ? 'en' : 'es';
+    const instCol1 = document.getElementById('instCol1');
+    const instCol2 = document.getElementById('instCol2');
+    const instCol3 = document.getElementById('instCol3');
+    const btnDonate = document.getElementById('btnDonate');
+    const linkPrivacy = document.getElementById('linkPrivacy');
+    if (instCol1) {
+      instCol1.innerHTML = isEn
+        ? `<h4>🕹️ Controls</h4>
+      <ul>
+        <li><span class="kbd">SPACE</span> or click: Drop / Jump (Double jump on Highway)</li>
+        <li><span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> <span class="kbd">4</span> <span class="kbd">5</span>: Direct supply selection</li>
+        <li><span class="kbd">Q</span> / <span class="kbd">E</span>: Cycle carousel</li>
+        <li><span class="kbd">A</span> / <span class="kbd">D</span>: Adjust speed</li>
+      </ul>`
+        : `<h4>🕹️ Controles</h4>
+      <ul>
+        <li><span class="kbd">ESPACIO</span> o clic: Soltar / Saltar (Doble salto en Carretera)</li>
+        <li><span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> <span class="kbd">4</span> <span class="kbd">5</span>: Selección directa de carga</li>
+        <li><span class="kbd">Q</span> / <span class="kbd">E</span>: Girar carrusel</li>
+        <li><span class="kbd">A</span> / <span class="kbd">D</span>: Regular velocidad</li>
+      </ul>`;
+    }
+    if (instCol2) {
+      instCol2.innerHTML = isEn
+        ? `<h4>🎯 Compatibility</h4>
+      <ul>
+        <li>🏘️ <strong>Low-Income Belt</strong> ➔ 💵 Money, 💧 Water or 🥖 Food</li>
+        <li>🏙️ <strong>Civic Center / Modern</strong> ➔ 📖 Bible / Wisdom</li>
+        <li>🏡 <strong>Hillside Neighborhood</strong> ➔ 🎁 Gifts, 🥖 Food or 💵 Money</li>
+        <li>🔥 <strong>Active Wildfire</strong> ➔ 💧 Water Bomb</li>
+      </ul>`
+        : `<h4>🎯 Compatibilidad</h4>
+      <ul>
+        <li>🏘️ <strong>Cinturón de Pobreza</strong> ➔ 💵 Dinero, 💧 Agua o 🥖 Comida</li>
+        <li>🏙️ <strong>Centro Cívico / Moderna</strong> ➔ 📖 Biblia / Sabiduría</li>
+        <li>🏡 <strong>Barrio Popular</strong> ➔ 🎁 Regalos, 🥖 Comida o 💵 Dinero</li>
+        <li>🔥 <strong>Incendio</strong> ➔ 💧 Bomba de Agua</li>
+      </ul>`;
+    }
+    if (instCol3) {
+      instCol3.innerHTML = isEn
+        ? `<h4>💖 Mission of Joy</h4>
+      <p>Calculate the plane's parabolic inertia when dropping supplies. Keep the <strong>Joy-O-Meter</strong> high and chain hits to multiply combos (2x, 3x, 4x).</p>`
+        : `<h4>💖 Misión de Alegría</h4>
+      <p>Calcula la inercia parabólica del avión al soltar la carga. Mantén el <strong>Joy-O-Meter</strong> elevado y encadena aciertos para multiplicar combos (2x, 3x, 4x).</p>`;
+    }
+    if (btnDonate) {
+      btnDonate.textContent = isEn
+        ? '☕ Support Xatruch Games (Donate with PayPal)'
+        : '☕ Apoya a Xatruch Games (Donar con PayPal)';
+    }
+    if (linkPrivacy) {
+      linkPrivacy.textContent = isEn ? 'Privacy Policy' : 'Política de Privacidad';
+    }
     const effMode = gameState.getEffectiveMode ? gameState.getEffectiveMode() : gameState.mode;
     audio.setMusicForMode(effMode, gameState.levelIndex);
   };

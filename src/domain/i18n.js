@@ -4,7 +4,7 @@
  * o preferencia manual en localStorage.
  */
 
-const STORAGE_KEY = 'xatruch_lang';
+const STORAGE_KEY = 'xatruch_lang_v2';
 
 const detectInitialLang = () => {
   if (typeof window !== 'undefined') {
@@ -18,7 +18,7 @@ const detectInitialLang = () => {
       // Ignorar si localStorage no está disponible
     }
   }
-  return 'es';
+  return 'en';
 };
 
 let currentLang = detectInitialLang();

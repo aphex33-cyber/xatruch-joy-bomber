@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -18,14 +18,14 @@
         <span>XATRUCH JOY BOMBER</span>
       </div>
       <div class="header-actions">
-        <button id="btnMenu" class="btn-pill">🏠 Menú</button>
-        <button id="btnPause" class="btn-pill">⏸️ Pausa</button>
-        <button id="btnMode" class="btn-pill">📖 Modo: Historia</button>
-        <button id="btnDifficulty" class="btn-pill">🎚️ Fácil</button>
+        <button id="btnMenu" class="btn-pill">🏠 Menu</button>
+        <button id="btnPause" class="btn-pill">⏸️ Pause</button>
+        <button id="btnMode" class="btn-pill">📖 Mode: Story</button>
+        <button id="btnDifficulty" class="btn-pill">🎚️ Easy</button>
         <button id="btnHangar" class="btn-pill">✈️ Hangar</button>
-        <button id="btnFullscreen" class="btn-pill">⛶ Pantalla</button>
+        <button id="btnFullscreen" class="btn-pill">⛶ Fullscreen</button>
         <button id="btnMute" class="btn-pill">🔊 Audio: ON</button>
-        <button id="btnLang" class="btn-pill">🌐 ES</button>
+        <button id="btnLang" class="btn-pill">🌐 EN</button>
       </div>
     </header>
 
@@ -35,10 +35,10 @@
     <!-- Barra de Controles Táctiles para Móviles / Auxiliares -->
     <div class="touch-controls">
       <div class="carousel-buttons">
-        <button id="btnPrev" class="ctrl-btn">◀ [Q] Anterior</button>
-        <button id="btnNext" class="ctrl-btn">[E] Siguiente ▶</button>
+        <button id="btnPrev" class="ctrl-btn">◀ [Q] Prev</button>
+        <button id="btnNext" class="ctrl-btn">[E] Next ▶</button>
       </div>
-      <button id="btnDrop" class="ctrl-btn ctrl-btn-primary">🚀 SOLTAR [ESPACIO]</button>
+      <button id="btnDrop" class="ctrl-btn ctrl-btn-primary">🚀 DROP [SPACE]</button>
     </div>
   </div>
 
@@ -57,27 +57,27 @@
   </div>
 
   <div class="instructions-panel">
-    <div class="instruction-col">
-      <h4>🕹️ Controles</h4>
+    <div id="instCol1" class="instruction-col">
+      <h4>🕹️ Controls</h4>
       <ul>
-        <li><span class="kbd">ESPACIO</span> o clic: Soltar / Saltar (Doble salto en Carretera)</li>
-        <li><span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> <span class="kbd">4</span> <span class="kbd">5</span>: Selección directa de carga</li>
-        <li><span class="kbd">Q</span> / <span class="kbd">E</span>: Girar carrusel</li>
-        <li><span class="kbd">A</span> / <span class="kbd">D</span>: Regular velocidad</li>
+        <li><span class="kbd">SPACE</span> or click: Drop / Jump (Double jump on Highway)</li>
+        <li><span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> <span class="kbd">4</span> <span class="kbd">5</span>: Direct supply selection</li>
+        <li><span class="kbd">Q</span> / <span class="kbd">E</span>: Cycle carousel</li>
+        <li><span class="kbd">A</span> / <span class="kbd">D</span>: Adjust speed</li>
       </ul>
     </div>
-    <div class="instruction-col">
-      <h4>🎯 Compatibilidad</h4>
+    <div id="instCol2" class="instruction-col">
+      <h4>🎯 Compatibility</h4>
       <ul>
-        <li>🏘️ <strong>Cinturón de Pobreza</strong> ➔ 💵 Dinero, 💧 Agua o 🥖 Comida</li>
-        <li>🏙️ <strong>Centro Cívico / Moderna</strong> ➔ 📖 Biblia / Sabiduría</li>
-        <li>🏡 <strong>Barrio Popular</strong> ➔ 🎁 Regalos, 🥖 Comida o 💵 Dinero</li>
-        <li>🔥 <strong>Incendio</strong> ➔ 💧 Bomba de Agua</li>
+        <li>🏘️ <strong>Low-Income Belt</strong> ➔ 💵 Money, 💧 Water or 🥖 Food</li>
+        <li>🏙️ <strong>Civic Center / Modern</strong> ➔ 📖 Bible / Wisdom</li>
+        <li>🏡 <strong>Hillside Neighborhood</strong> ➔ 🎁 Gifts, 🥖 Food or 💵 Money</li>
+        <li>🔥 <strong>Active Wildfire</strong> ➔ 💧 Water Bomb</li>
       </ul>
     </div>
-    <div class="instruction-col">
-      <h4>💖 Misión de Alegría</h4>
-      <p>Calcula la inercia parabólica del avión al soltar la carga. Mantén el <strong>Joy-O-Meter</strong> elevado y encadena aciertos para multiplicar combos (2x, 3x, 4x).</p>
+    <div id="instCol3" class="instruction-col">
+      <h4>💖 Mission of Joy</h4>
+      <p>Calculate the plane's parabolic inertia when dropping supplies. Keep the <strong>Joy-O-Meter</strong> high and chain hits to multiply combos (2x, 3x, 4x).</p>
     </div>
   </div>
 
@@ -87,10 +87,10 @@
   </div>
 
   <footer style="margin-top: 14px; font-size: 11px; color: #64748b; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;">
-    <a href="https://www.paypal.com/ncp/payment/YGDS4BUX9347W" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 6px; background: #0f172a; color: #38bdf8; border: 1px solid #334155; padding: 8px 16px; border-radius: 9999px; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; text-decoration: none;">
-      ☕ Apoya a Xatruch Games (Donar con PayPal)
+    <a id="btnDonate" href="https://www.paypal.com/ncp/payment/YGDS4BUX9347W" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 6px; background: #0f172a; color: #38bdf8; border: 1px solid #334155; padding: 8px 16px; border-radius: 9999px; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; text-decoration: none;">
+      ☕ Support Xatruch Games (Donate with PayPal)
     </a>
-    <a href="privacy.html" style="color: #94a3b8; text-decoration: none;">Política de Privacidad</a>
+    <a id="linkPrivacy" href="privacy.html" style="color: #94a3b8; text-decoration: none;">Privacy Policy</a>
   </footer>
 
   <script type="module" src="src/main.js"></script>

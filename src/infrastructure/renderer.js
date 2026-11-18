@@ -1804,11 +1804,49 @@ export class CanvasRenderer {
       this.sprites.drawPlane(ctx, gameState.plane, this.propellerAngle, this.elapsedTime, gameState.selectedPlaneId);
     }
 
-    // Dibujar Boss
+    // Destello de disparo (muzzle flash)
+    if (be.muzzleFlashTimer > 0) {
+      ctx.fillStyle = '#fde047';
+      ctx.beginPath();
+      ctx.arc(gameState.plane.x + gameState.plane.width + 6, gameState.plane.y + gameState.plane.height * 0.5, 8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Dibujar Boss (+ aura helada si fue ralentizado con Hielo)
+    if (boss.chillTimer > 0) {
+      ctx.fillStyle = 'rgba(165, 243, 252, 0.25)';
+      ctx.beginPath();
+      ctx.ellipse(boss.x + boss.width / 2, boss.y + boss.height / 2, boss.width * 0.65, boss.height * 0.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
     if (isSps) {
       this.sprites.drawSpsBoss(ctx, boss, this.elapsedTime);
     } else {
       this.sprites.drawTegucigalpaBoss(ctx, boss, this.elapsedTime);
+    }
+
+    // Rayos horizontales de calor (SPS)
+    for (const bm of be.heatBeams) {
+      if (bm.warnTimer > 0) {
+        if (Math.sin(this.elapsedTime * 28) > 0) {
+          ctx.strokeStyle = '#facc15';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([8, 6]);
+          ctx.beginPath();
+          ctx.moveTo(0, bm.y);
+          ctx.lineTo(boss.x, bm.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.font = 'bold 12px sans-serif';
+          ctx.fillStyle = '#facc15';
+          ctx.fillText('⚠️', boss.x - 16, bm.y - 6);
+        }
+      } else {
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.7)';
+        ctx.fillRect(0, bm.y - 10, boss.x, 20);
+        ctx.fillStyle = '#fde047';
+        ctx.fillRect(0, bm.y - 4, boss.x, 8);
+      }
     }
 
     // Disparos del jugador
@@ -1823,22 +1861,58 @@ export class CanvasRenderer {
       ctx.fillText(s.icon, s.x, s.y);
     }
 
-    // Ataques del Boss (gritos, bocinazos, insultos, rayos de calor)
+    // Ataques alternados del Boss (Fuego animado, Llantas girando, Humo tóxico o Gritos)
     for (const atk of be.bossAttacks) {
       ctx.save();
-      ctx.font = 'bold 10px "JetBrains Mono", monospace';
-      const tw = ctx.measureText(atk.text).width + 12;
-      ctx.fillStyle = atk.isHeat ? '#ef4444' : '#fef08a';
-      ctx.beginPath();
-      ctx.roundRect(atk.x - tw / 2, atk.y - 10, tw, 20, 6);
-      ctx.fill();
-      ctx.strokeStyle = '#0f172a';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.fillStyle = atk.isHeat ? '#ffffff' : '#0f172a';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(atk.text, atk.x, atk.y);
+      if (atk.kind === 'FIREBALL') {
+        ctx.translate(atk.x, atk.y);
+        ctx.rotate(atk.rotation);
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.arc(0, 0, atk.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#f97316';
+        ctx.fillRect(-8, -8, 16, 16);
+        ctx.fillStyle = '#fde047';
+        ctx.fillRect(-4, -4, 8, 8);
+      } else if (atk.kind === 'TIRE') {
+        ctx.translate(atk.x, atk.y);
+        ctx.rotate(-atk.rotation);
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(0, 0, atk.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#94a3b8';
+        ctx.beginPath();
+        ctx.arc(0, 0, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(-atk.radius, -2, atk.radius * 2, 4);
+      } else if (atk.kind === 'SMOKE') {
+        ctx.fillStyle = 'rgba(30, 41, 59, 0.88)';
+        ctx.beginPath();
+        ctx.arc(atk.x, atk.y, atk.radius, 0, Math.PI * 2);
+        ctx.arc(atk.x + 8, atk.y - 5, atk.radius * 0.75, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('💨', atk.x, atk.y);
+      } else {
+        ctx.font = 'bold 10px "JetBrains Mono", monospace';
+        const tw = ctx.measureText(atk.text).width + 12;
+        ctx.fillStyle = atk.isHeat ? '#ef4444' : '#fef08a';
+        ctx.beginPath();
+        ctx.roundRect(atk.x - tw / 2, atk.y - 10, tw, 20, 6);
+        ctx.fill();
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = atk.isHeat ? '#ffffff' : '#0f172a';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(atk.text, atk.x, atk.y);
+      }
       ctx.restore();
     }
 

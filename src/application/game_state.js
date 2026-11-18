@@ -135,7 +135,7 @@ export class GameState {
   }
 
   startBossFight(bossId) {
-    this.bossEngine.start(bossId, this.canvasWidth, this.canvasHeight);
+    this.bossEngine.start(bossId, this.canvasWidth, this.canvasHeight, this.difficulty);
     this.plane.x = 64;
     this.plane.y = this.canvasHeight * 0.45;
     this.plane.tilt = 0;

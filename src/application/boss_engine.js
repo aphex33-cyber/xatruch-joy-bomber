@@ -124,7 +124,51 @@ export class BossEngine {
     const aimAngle = Math.atan2(plane.y + 12 - spawnY, plane.x + 30 - this.boss.x);
     const spd = this.diffSettings.projSpeed + Math.random() * 45;
 
-    if (this.boss.id === 'SPS') {
+    if (this.boss.id === 'COPAN') {
+      // Quetzalcóatl alterna entre Jaguares, Fuego, Agua y rugidos míticos
+      const kindIdx = seq % 4;
+      if (kindIdx === 0) {
+        this.bossAttacks.push({
+          kind: 'JAGUAR',
+          x: this.boss.x - 12,
+          y: spawnY,
+          vx: Math.cos(aimAngle) * (spd * 1.1),
+          vy: Math.sin(aimAngle) * (spd * 1.1),
+          radius: 16
+        });
+      } else if (kindIdx === 1) {
+        this.bossAttacks.push({
+          kind: 'FIREBALL',
+          x: this.boss.x - 10,
+          y: spawnY,
+          vx: Math.cos(aimAngle) * spd,
+          vy: Math.sin(aimAngle) * spd,
+          rotation: 0,
+          radius: 13
+        });
+      } else if (kindIdx === 2) {
+        this.bossAttacks.push({
+          kind: 'WATER_BLAST',
+          x: this.boss.x - 10,
+          y: spawnY,
+          vx: Math.cos(aimAngle) * spd,
+          vy: Math.sin(aimAngle) * spd,
+          rotation: 0,
+          radius: 13
+        });
+      } else {
+        const quote = this.config.attacks[Math.floor(Math.random() * this.config.attacks.length)];
+        this.bossAttacks.push({
+          kind: 'TEXT',
+          x: this.boss.x - 10,
+          y: spawnY,
+          vx: Math.cos(aimAngle) * spd,
+          vy: Math.sin(aimAngle) * spd,
+          text: quote,
+          isHeat: false
+        });
+      }
+    } else if (this.boss.id === 'SPS') {
       // SPS alterna entre Bola de Fuego animada, Rayo de Calor horizontal y Grito de furia
       const kindIdx = seq % 3;
       if (kindIdx === 0) {

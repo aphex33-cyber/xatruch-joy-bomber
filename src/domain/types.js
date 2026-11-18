@@ -8,7 +8,7 @@ export const OFFICIAL_TITLE = 'Xatruch Joy Bomber';
 export const HONDURAS_CITIES = [
   { id: 'TEGUCIGALPA', name: 'Tegucigalpa', nx: 0.48, ny: 0.65, stageIndex: 0, playable: true },
   { id: 'SPS', name: 'San Pedro Sula', nx: 0.30, ny: 0.30, stageIndex: 1, playable: true },
-  { id: 'COPAN', name: 'Copán', nx: 0.14, ny: 0.45, stageIndex: 2, playable: false },
+  { id: 'COPAN', name: 'Copán', nx: 0.14, ny: 0.45, stageIndex: 2, playable: true },
   { id: 'GUARIZAMA', name: 'Guarizama', nx: 0.63, ny: 0.50, stageIndex: 3, playable: false },
   { id: 'COMAYAGUA', name: 'Comayagua', nx: 0.40, ny: 0.56, stageIndex: 4, playable: false },
   { id: 'JESUS_DE_OTORO', name: 'Jesús de Otoro', nx: 0.31, ny: 0.60, stageIndex: 5, playable: false }
@@ -30,7 +30,7 @@ export const BOSS_CONFIGS = {
     enrageWeapons: [],
     attacks: ['¡PIIIP! 📢', '¡MUEVE PUES! 🤬', '¡2 HORAS EN EL ANILLO!', '¡NO HAY PASO! 🚗'],
     victoryQuote:
-      'Oh serpiente de mil cabezas e igual número de colas, criatura mítica de humo y hierro, para tu deshonra caes bajo la espada de este general caído que se levanta, ¡habitantes de esta villa sean libres!'
+      '¡Oh serpiente de mil cabezas e igual número de colas, criatura mítica de humo y hierro! Para tu deshonra caes bajo la espada de este general caído que se levanta; ¡habitantes de esta villa, sean libres!'
   },
   SPS: {
     id: 'SPS',
@@ -40,7 +40,17 @@ export const BOSS_CONFIGS = {
     enrageWeapons: ['FIRE', 'BULLET'],
     attacks: ['☀️ ¡RAYO DE CALOR!', '🔥 ¡FURIA DEL VALLE!', '🥵 ¡SOFOCO TOTAL!', '💥 ¡LLAMARADA!'],
     victoryQuote:
-      'Apagose el fuego de tus entrañas, ciudad de los zorzales y de la gente que goza del trabajo.'
+      'Apagóse el fuego de tus entrañas, ciudad de los zorzales y de la gente que goza del trabajo.'
+  },
+  COPAN: {
+    id: 'COPAN',
+    name: 'Quetzalcóatl, Serpiente Emplumada',
+    maxHp: 260,
+    effectiveWeapons: ['BULLET', 'FIRE', 'WATER', 'ICE'],
+    enrageWeapons: [],
+    attacks: ['🐍 ¡FURIA MAYA!', '🐆 ¡RUGIDO DEL JAGUAR!', '🌊 ¡TORRENTE SAGRADO!'],
+    victoryQuote:
+      'Monstruo precolombino, agitador del espíritu, Prometeo mesoamericano, te venzo y reconozco tu grandeza, pero son otros tiempos; ¡liberada queda la Copán de mi gente!'
   }
 };
 
@@ -116,16 +126,23 @@ export const STORY_STAGES = [
   },
   {
     stageIndex: 2,
-    subMode: 'GEOMETRY',
-    levelIndex: 0,
-    title: 'Cap. 3: Reconstrucción I',
-    subtitle: 'Encaja las estructuras básicas para reconstruir plazas'
+    subMode: 'CITY',
+    levelIndex: 2,
+    title: 'Cap. 3: Copán Ruinas',
+    subtitle: 'Templo Rosalila, Pirámides Mayas, Cafetales y Aldeas'
   },
   {
     stageIndex: 3,
     subMode: 'GEOMETRY',
+    levelIndex: 0,
+    title: 'Cap. 4: Reconstrucción I',
+    subtitle: 'Encaja las estructuras básicas para reconstruir plazas'
+  },
+  {
+    stageIndex: 4,
+    subMode: 'GEOMETRY',
     levelIndex: 1,
-    title: 'Cap. 4: Reconstrucción II',
+    title: 'Cap. 5: Reconstrucción II',
     subtitle: 'Gran Final: encaja las figuras complejas de precisión'
   }
 ];
@@ -320,7 +337,10 @@ export const BIOME_TYPES = {
   RICH_DISTRICT: 'RICH_DISTRICT',
   FAVELA: 'FAVELA',
   FIRE_EMERGENCY: 'FIRE_EMERGENCY',
-  GEOMETRY_ZONE: 'GEOMETRY_ZONE'
+  GEOMETRY_ZONE: 'GEOMETRY_ZONE',
+  COPAN_CROPS: 'COPAN_CROPS',
+  COPAN_TEMPLES: 'COPAN_TEMPLES',
+  COPAN_VILLAGE: 'COPAN_VILLAGE'
 };
 
 export const BIOMES_CATALOG = {
@@ -383,6 +403,42 @@ export const BIOMES_CATALOG = {
     happyMessage: '¡Encaje perfecto!',
     unhappyMessage: '¡Fallo de precisión!',
     weightScore: 150
+  },
+  [BIOME_TYPES.COPAN_CROPS]: {
+    id: BIOME_TYPES.COPAN_CROPS,
+    name: 'Cafetales de Copán',
+    groundColor: '#3f6212',
+    secondaryColor: '#65a30d',
+    skyGradient: ['#0284c7', '#bbf7d0'],
+    accentEmoji: '🌱',
+    neededItems: [ITEM_TYPES.WATER],
+    happyMessage: '¡Los cafetales florecen con agua fresca!',
+    unhappyMessage: '¡Los cultivos necesitan agua!',
+    weightScore: 115
+  },
+  [BIOME_TYPES.COPAN_TEMPLES]: {
+    id: BIOME_TYPES.COPAN_TEMPLES,
+    name: 'Templos Mayas / Rosalila',
+    groundColor: '#57534e',
+    secondaryColor: '#84cc16',
+    skyGradient: ['#0369a1', '#bae6fd'],
+    accentEmoji: '🏛️',
+    neededItems: [ITEM_TYPES.BIBLE],
+    happyMessage: '¡Sabiduría y paz junto a los templos!',
+    unhappyMessage: '¡Cerca de los templos piden Biblia / Sabiduría!',
+    weightScore: 120
+  },
+  [BIOME_TYPES.COPAN_VILLAGE]: {
+    id: BIOME_TYPES.COPAN_VILLAGE,
+    name: 'Aldea Pintoresca de Copán',
+    groundColor: '#78350f',
+    secondaryColor: '#65a30d',
+    skyGradient: ['#0ea5e9', '#fef08a'],
+    accentEmoji: '🏡',
+    neededItems: [ITEM_TYPES.FOOD, ITEM_TYPES.TOY],
+    happyMessage: '¡Alegría y pan en la aldea!',
+    unhappyMessage: '¡Fíjate si piden pan o regalos!',
+    weightScore: 110
   }
 };
 
@@ -410,6 +466,17 @@ export const LEVELS_CONFIG = {
       minJoy: 70,
       skyTint: '#0284c7',
       landmarks: ['MERENDON', 'ESTADIO_OLIMPICO', 'BORDOS', 'FUENTE_LUMINOSA']
+    },
+    {
+      level: 3,
+      id: 'COPAN',
+      title: 'Nivel 3: Copán Ruinas',
+      subtitle: 'Templo Rosalila, Pirámides Mayas, Cafetales y Aldeas',
+      targetScore: 10500,
+      minJoy: 70,
+      skyTint: '#0369a1',
+      biomes: [BIOME_TYPES.COPAN_CROPS, BIOME_TYPES.COPAN_TEMPLES, BIOME_TYPES.COPAN_VILLAGE],
+      landmarks: ['ROSALILA', 'PIRAMIDE_MAYA', 'CAFETALES', 'ESTELA_MAYA']
     }
   ],
   [GAME_MODES.GEOMETRY]: [

@@ -780,4 +780,91 @@ export class SpriteLibrary {
 
     ctx.restore();
   }
+
+  /**
+   * Boss 3 (Copán): Quetzalcóatl, la Serpiente Emplumada 16-bit
+   */
+  drawQuetzalcoatlBoss(ctx, boss, time) {
+    const x = boss.x;
+    const y = boss.y;
+    const w = boss.width;
+    const h = boss.height;
+
+    ctx.save();
+    if (boss.hitFlash > 0) ctx.filter = 'brightness(1.8)';
+
+    // Cuerpo ondulante verde jade en segmentos
+    for (let i = 4; i >= 0; i--) {
+      const segWave = Math.sin(time * 7 + i * 0.9) * 10;
+      const sx = x + w * 0.25 + i * 11;
+      const sy = y + h * 0.35 + i * 13 + segWave;
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(sx, sy, 17, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = i % 2 === 0 ? '#10b981' : '#059669';
+      ctx.beginPath();
+      ctx.arc(sx, sy, 14, 0, Math.PI * 2);
+      ctx.fill();
+      // Escama ventral dorada
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(sx - 6, sy + 5, 12, 5);
+    }
+
+    // Penacho de plumas sagradas (rojo escarlata, turquesa y oro)
+    const plumeWave = Math.sin(time * 10) * 4;
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(x + 28, y - 8 + plumeWave, 28, 10);
+    ctx.fillStyle = '#22d3ee';
+    ctx.fillRect(x + 36, y - 16 + plumeWave, 26, 8);
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(x + 42, y - 22 + plumeWave, 20, 6);
+
+    // Cabeza de serpiente mirando a la izquierda
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(x + 4, y + 6, 46, 36);
+    ctx.fillStyle = '#10b981';
+    ctx.fillRect(x + 7, y + 9, 40, 30);
+
+    // Ojo dorado intenso
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(x + 14, y + 14, 10, 8);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(x + 16, y + 16, 4, 4);
+
+    // Boca abierta con colmillos blancos
+    ctx.fillStyle = '#7f1d1d';
+    ctx.fillRect(x + 4, y + 27, 24, 10);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x + 7, y + 27, 4, 6);
+    ctx.fillRect(x + 17, y + 27, 4, 6);
+
+    ctx.restore();
+  }
+
+  /**
+   * Jaguar dorado saltando (proyectil de Quetzalcóatl)
+   */
+  drawJaguarProjectile(ctx, atk, time) {
+    const x = atk.x;
+    const y = atk.y;
+    const leap = Math.sin(time * 20 + x * 0.05) * 3;
+    ctx.save();
+    // Cuerpo dorado
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(x - 16, y - 8 + leap, 32, 16);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(x - 14, y - 6 + leap, 28, 12);
+    // Manchas negras de jaguar
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(x - 8, y - 4 + leap, 4, 4);
+    ctx.fillRect(x, y - 2 + leap, 4, 4);
+    ctx.fillRect(x + 6, y - 4 + leap, 4, 4);
+    // Cabeza y colmillos hacia la izquierda
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(x - 20, y - 9 + leap, 10, 10);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x - 20, y - 2 + leap, 3, 4);
+    ctx.restore();
+  }
 }

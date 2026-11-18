@@ -672,6 +672,73 @@ export class CanvasRenderer {
         ctx.fillRect(x + i * 12 - 2, y - 14 - arcH, 4, arcH);
       }
       this.drawLandmarkLabel(ctx, x, y - 58, 'FUENTE LUMINOSA');
+    } else if (lm.type === 'ROSALILA') {
+      // Templo Rosalila (Copán Ruinas): rojo maya intenso con mascarones jade y crema
+      ctx.fillStyle = '#991b1b';
+      ctx.fillRect(x - 68, y - 46, 136, 46);
+      ctx.fillStyle = '#b91c1c';
+      ctx.fillRect(x - 54, y - 82, 108, 36);
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(x - 38, y - 110, 76, 28);
+      // Frisos esculpidos en verde jade y oro
+      ctx.fillStyle = '#10b981';
+      ctx.fillRect(x - 62, y - 50, 124, 6);
+      ctx.fillRect(x - 46, y - 86, 92, 6);
+      ctx.fillStyle = '#fde047';
+      ctx.fillRect(x - 18, y - 74, 36, 18); // Mascarón central dorado
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(x - 10, y - 28, 20, 28); // Entrada del templo
+      this.drawLandmarkLabel(ctx, x, y - 120, 'TEMPLO ROSALILA');
+    } else if (lm.type === 'PIRAMIDE_MAYA') {
+      // Pirámide escalonada de Copán con escalinata central
+      const levels = 5;
+      for (let i = 0; i < levels; i++) {
+        const pw = 148 - i * 24;
+        const ph = 18;
+        const py = y - (i + 1) * ph;
+        ctx.fillStyle = i % 2 === 0 ? '#78716c' : '#a8a29e';
+        ctx.fillRect(x - pw / 2, py, pw, ph);
+        ctx.strokeStyle = '#0f172a';
+        ctx.strokeRect(x - pw / 2, py, pw, ph);
+      }
+      // Escalinata central
+      ctx.fillStyle = '#d6d3d1';
+      ctx.fillRect(x - 16, y - 90, 32, 90);
+      // Templo superior
+      ctx.fillStyle = '#57534e';
+      ctx.fillRect(x - 22, y - 112, 44, 22);
+      this.drawLandmarkLabel(ctx, x, y - 122, 'PIRÁMIDES DE COPÁN');
+    } else if (lm.type === 'CAFETALES') {
+      // Lomas verdes con hileras de cafetales y granos rojos
+      ctx.fillStyle = '#166534';
+      ctx.beginPath();
+      ctx.moveTo(x - 130, y);
+      ctx.quadraticCurveTo(x, y - 95, x + 130, y);
+      ctx.fill();
+      for (let cx = -85; cx <= 85; cx += 28) {
+        const cy = y - 14 - (1 - Math.abs(cx) / 110) * 32;
+        ctx.fillStyle = '#15803d';
+        ctx.beginPath();
+        ctx.arc(x + cx, cy, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ef4444'; // Granos maduros de café
+        ctx.fillRect(x + cx - 4, cy - 3, 3, 3);
+        ctx.fillRect(x + cx + 3, cy + 2, 3, 3);
+      }
+      this.drawLandmarkLabel(ctx, x, y - 78, 'CAFETALES DE COPÁN');
+    } else if (lm.type === 'ESTELA_MAYA') {
+      // Estela Maya tallada con glifos
+      ctx.fillStyle = '#78716c';
+      ctx.fillRect(x - 24, y - 14, 48, 14);
+      ctx.fillStyle = '#a8a29e';
+      ctx.fillRect(x - 12, y - 76, 24, 62);
+      ctx.strokeStyle = '#0f172a';
+      ctx.strokeRect(x - 12, y - 76, 24, 62);
+      ctx.fillStyle = '#10b981';
+      for (let gy = 22; gy < 70; gy += 12) {
+        ctx.fillRect(x - 7, y - gy, 14, 6);
+      }
+      this.drawLandmarkLabel(ctx, x, y - 86, 'ESTELA MAYA');
     }
     ctx.restore();
   }
@@ -805,6 +872,54 @@ export class CanvasRenderer {
       if (b.height > 54) {
         ctx.fillRect(b.x + 12, b.y + 10, 8, 8);
       }
+    } else if (b.type === BIOME_TYPES.COPAN_CROPS) {
+      // Arbustos de café en ambiente rural
+      const cx = b.x + b.width * 0.5;
+      const cy = b.y + b.height;
+      ctx.fillStyle = '#14532d';
+      ctx.beginPath();
+      ctx.arc(cx, cy - 12, 16, 0, Math.PI * 2);
+      ctx.arc(cx - 12, cy - 8, 12, 0, Math.PI * 2);
+      ctx.arc(cx + 12, cy - 8, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ef4444'; // Granos de café rojos
+      ctx.fillRect(cx - 6, cy - 16, 3, 3);
+      ctx.fillRect(cx + 4, cy - 10, 3, 3);
+      ctx.fillRect(cx - 10, cy - 6, 3, 3);
+    } else if (b.type === BIOME_TYPES.COPAN_TEMPLES) {
+      // Ruinas mayas escalonadas con musgo verde
+      ctx.fillStyle = '#78716c';
+      ctx.fillRect(b.x, b.y + b.height * 0.4, b.width, b.height * 0.6);
+      ctx.fillStyle = '#a8a29e';
+      ctx.fillRect(b.x + 8, b.y, b.width - 16, b.height * 0.45);
+      ctx.fillStyle = '#15803d'; // Musgo rural
+      ctx.fillRect(b.x + 10, b.y, b.width - 20, 4);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(b.x + b.width / 2 - 6, b.y + b.height - 16, 12, 16);
+    } else if (b.type === BIOME_TYPES.COPAN_VILLAGE) {
+      // Casitas pintorescas rurales de Copán (pared blanca/crema, tejas rojas de barro, flores)
+      const walls = ['#fef3c7', '#f5f5f4', '#ffedd5'];
+      ctx.fillStyle = walls[(b.variant || 0) % walls.length];
+      ctx.fillRect(b.x, b.y + 10, b.width, b.height - 10);
+      ctx.strokeRect(b.x, b.y + 10, b.width, b.height - 10);
+
+      // Techo inclinado de tejas rojas de barro
+      ctx.fillStyle = '#b91c1c';
+      ctx.beginPath();
+      ctx.moveTo(b.x - 5, b.y + 12);
+      ctx.lineTo(b.x + b.width / 2, b.y - 4);
+      ctx.lineTo(b.x + b.width + 5, b.y + 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Puerta de madera y ventana con maceta de flores
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(b.x + 8, b.y + b.height - 18, 10, 18);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(b.x + b.width - 20, b.y + 18, 10, 10);
+      ctx.fillStyle = '#f43f5e';
+      ctx.fillRect(b.x + b.width - 20, b.y + 28, 10, 4);
     }
   }
 
@@ -1616,7 +1731,7 @@ export class CanvasRenderer {
       const bubbleX = isMobile ? w * 0.40 : w * 0.36;
       const bubbleW = Math.min(440, w - bubbleX - 18);
       const quote =
-        'Para mi ventura propia y desventura de mis enemigos, me ha revivido IA, tomo como destino a bien traer felicidad a mi pueblo, que ha sido abandonado a su suerte, y de la cual, veo con tristeza, no goza.';
+        'Para mi ventura propia y desventura de mis enemigos, me ha revivido la IA; tomo como destino a bien traer felicidad a mi pueblo, que ha sido abandonado a su suerte y de la cual, veo con tristeza, no goza.';
       this.drawComicBubble(ctx, bubbleX, isMobile ? 76 : 104, bubbleW, quote, isMobile ? 11 : 13);
     } else {
       // Escena 2: Sube al avión y exclama
@@ -1630,7 +1745,7 @@ export class CanvasRenderer {
 
       const bubbleX = isMobile ? w * 0.34 : w * 0.36;
       const bubbleW = Math.min(420, w - bubbleX - 18);
-      const quote = '¡Se me entrega este corcel, que he de cabalgar por estos cielos de límpido azul!';
+      const quote = 'Se me entrega este corcel, que he de cabalgar por estos cielos de límpido azul.';
       this.drawComicBubble(ctx, bubbleX, isMobile ? 96 : 120, bubbleW, quote, isMobile ? 12 : 14);
     }
 
@@ -1819,7 +1934,9 @@ export class CanvasRenderer {
       ctx.ellipse(boss.x + boss.width / 2, boss.y + boss.height / 2, boss.width * 0.65, boss.height * 0.6, 0, 0, Math.PI * 2);
       ctx.fill();
     }
-    if (isSps) {
+    if (boss.id === 'COPAN') {
+      this.sprites.drawQuetzalcoatlBoss(ctx, boss, this.elapsedTime);
+    } else if (isSps) {
       this.sprites.drawSpsBoss(ctx, boss, this.elapsedTime);
     } else {
       this.sprites.drawTegucigalpaBoss(ctx, boss, this.elapsedTime);
@@ -1864,7 +1981,20 @@ export class CanvasRenderer {
     // Ataques alternados del Boss (Fuego animado, Llantas girando, Humo tóxico o Gritos)
     for (const atk of be.bossAttacks) {
       ctx.save();
-      if (atk.kind === 'FIREBALL') {
+      if (atk.kind === 'JAGUAR') {
+        this.sprites.drawJaguarProjectile(ctx, atk, this.elapsedTime);
+      } else if (atk.kind === 'WATER_BLAST') {
+        ctx.translate(atk.x, atk.y);
+        ctx.rotate(atk.rotation);
+        ctx.fillStyle = '#0284c7';
+        ctx.beginPath();
+        ctx.arc(0, 0, atk.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#bae6fd';
+        ctx.beginPath();
+        ctx.arc(-3, -3, atk.radius * 0.45, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (atk.kind === 'FIREBALL') {
         ctx.translate(atk.x, atk.y);
         ctx.rotate(atk.rotation);
         ctx.fillStyle = '#dc2626';

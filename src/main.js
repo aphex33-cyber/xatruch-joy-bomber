@@ -136,7 +136,7 @@ window.addEventListener('DOMContentLoaded', () => {
     } else if (gameState.status === GAME_STATUS.STORY_MAP) {
       // Despegar en la última ciudad jugable desbloqueada
       const unlocked = gameState.unlockedCities || ['TEGUCIGALPA'];
-      const stageIdx = unlocked.includes('SPS') ? 1 : 0;
+      const stageIdx = unlocked.includes('COPAN') ? 2 : unlocked.includes('SPS') ? 1 : 0;
       gameState.startStoryStage(stageIdx);
       syncModeButtonLabel();
     } else if (gameState.status === GAME_STATUS.BOSS_FIGHT) {

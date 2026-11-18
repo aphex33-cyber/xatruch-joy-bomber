@@ -154,6 +154,8 @@ export class GameState {
       this.unlockedCities = ProgressStore.unlockCity('SPS');
     } else if (levelCfg.id === 'SPS') {
       this.unlockedCities = ProgressStore.unlockCity('COPAN');
+    } else if (levelCfg.id === 'COPAN') {
+      this.unlockedCities = ProgressStore.unlockCity('GUARIZAMA');
     }
 
     const totalLevels =
@@ -378,10 +380,16 @@ export class GameState {
       this.generateChunk(BIOME_TYPES.GEOMETRY_ZONE);
       this.generateChunk(BIOME_TYPES.GEOMETRY_ZONE);
     } else {
-      this.generateChunk(BIOME_TYPES.POVERTY_BELT);
-      this.generateChunk(BIOME_TYPES.RICH_DISTRICT);
-      this.generateChunk(BIOME_TYPES.FAVELA);
-      this.generateChunk(BIOME_TYPES.FIRE_EMERGENCY);
+      const levelCfg = this.getCurrentLevelConfig();
+      const initialBiomes = levelCfg.biomes || [
+        BIOME_TYPES.POVERTY_BELT,
+        BIOME_TYPES.RICH_DISTRICT,
+        BIOME_TYPES.FAVELA,
+        BIOME_TYPES.FIRE_EMERGENCY
+      ];
+      for (const bType of initialBiomes) {
+        this.generateChunk(bType);
+      }
     }
   }
 
@@ -422,7 +430,8 @@ export class GameState {
   }
 
   generateChunk(forcedType = null) {
-    const cityBiomeOrder = [
+    const levelCfg = this.getCurrentLevelConfig();
+    const cityBiomeOrder = levelCfg.biomes || [
       BIOME_TYPES.POVERTY_BELT,
       BIOME_TYPES.RICH_DISTRICT,
       BIOME_TYPES.FAVELA,
@@ -437,7 +446,6 @@ export class GameState {
         : cityBiomeOrder[this.landmarkCounter % cityBiomeOrder.length]);
 
     const biome = BIOMES_CATALOG[biomeType];
-    const levelCfg = this.getCurrentLevelConfig();
 
     let landmark = null;
     if (effMode === GAME_MODES.CITY && levelCfg.landmarks && levelCfg.landmarks.length > 0) {
@@ -503,6 +511,12 @@ export class GameState {
         bHeight = 42 + Math.random() * 56;
       } else if (type === BIOME_TYPES.FIRE_EMERGENCY) {
         bHeight = 70 + Math.random() * 72;
+      } else if (type === BIOME_TYPES.COPAN_CROPS) {
+        bHeight = 22 + Math.random() * 14; // Arbustos de café bajos
+      } else if (type === BIOME_TYPES.COPAN_TEMPLES) {
+        bHeight = 42 + Math.random() * 24; // Altares / ruinas bajas de piedra
+      } else if (type === BIOME_TYPES.COPAN_VILLAGE) {
+        bHeight = 36 + Math.random() * 18; // Casitas pintorescas rurales de 1 piso
       }
 
       buildings.push({
@@ -857,8 +871,11 @@ export class GameState {
       this.getLevelScore() >= levelCfg.targetScore &&
       this.dropEngine.scorer.joy >= levelCfg.minJoy
     ) {
-      // Si es ciudad con Boss (Tegucigalpa o SPS), iniciar batalla contra el Boss
-      if (this.getEffectiveMode() === GAME_MODES.CITY && (levelCfg.id === 'TEGUCIGALPA' || levelCfg.id === 'SPS')) {
+      // Si es ciudad con Boss (Tegucigalpa, SPS o Copán), iniciar batalla contra el Boss
+      if (
+        this.getEffectiveMode() === GAME_MODES.CITY &&
+        (levelCfg.id === 'TEGUCIGALPA' || levelCfg.id === 'SPS' || levelCfg.id === 'COPAN')
+      ) {
         this.startBossFight(levelCfg.id);
         return;
       }

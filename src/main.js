@@ -130,6 +130,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const instCol1 = document.getElementById('instCol1');
     const instCol2 = document.getElementById('instCol2');
     const instCol3 = document.getElementById('instCol3');
+    const btnDonateTop = document.getElementById('btnDonateTop');
     const btnDonate = document.getElementById('btnDonate');
     const linkPrivacy = document.getElementById('linkPrivacy');
     if (instCol1) {
@@ -172,6 +173,9 @@ window.addEventListener('DOMContentLoaded', () => {
       <p>Calculate the plane's parabolic inertia when dropping supplies. Keep the <strong>Joy-O-Meter</strong> high and chain hits to multiply combos (2x, 3x, 4x).</p>`
         : `<h4>💖 Misión de Alegría</h4>
       <p>Calcula la inercia parabólica del avión al soltar la carga. Mantén el <strong>Joy-O-Meter</strong> elevado y encadena aciertos para multiplicar combos (2x, 3x, 4x).</p>`;
+    }
+    if (btnDonateTop) {
+      btnDonateTop.textContent = isEn ? '☕ Donate' : '☕ Apoyar';
     }
     if (btnDonate) {
       btnDonate.textContent = isEn

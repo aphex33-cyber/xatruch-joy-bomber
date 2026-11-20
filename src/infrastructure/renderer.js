@@ -1979,7 +1979,11 @@ export class CanvasRenderer {
 
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 10px "JetBrains Mono", monospace';
-    ctx.fillText(`${Math.round(boss.hp)} / ${boss.maxHp} HP`, w / 2, 35);
+    ctx.fillText(
+      boss.phase2 ? `⚡ ${Math.round(boss.hp)} / ${boss.maxHp} HP` : `${Math.round(boss.hp)} / ${boss.maxHp} HP`,
+      w / 2,
+      35
+    );
 
     if (isSps) {
       ctx.fillStyle = '#38bdf8';

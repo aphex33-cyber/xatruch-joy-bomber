@@ -37,6 +37,8 @@ export class GameState {
     this.canvasHeight = canvasHeight;
     this.status = GAME_STATUS.START;
     this.introStep = 0; // 0 = Pose heroica, 1 = Sube al avión
+    this.storyIntroShown = false;
+    this.introTarget = 'STORY_MAP';
     this.mode = GAME_MODES.STORY;
     this.difficulty = 'EASY';
     this.levelIndex = 0;
@@ -114,7 +116,13 @@ export class GameState {
     if (this.introStep === 0) {
       this.introStep = 1;
     } else {
-      this.status = GAME_STATUS.START;
+      this.storyIntroShown = true;
+      if (this.introTarget === 'STORY_MAP') {
+        this.unlockedCities = ProgressStore.getUnlockedCities();
+        this.status = GAME_STATUS.STORY_MAP;
+      } else {
+        this.status = GAME_STATUS.START;
+      }
     }
   }
 
@@ -141,6 +149,12 @@ export class GameState {
 
   openStoryMap() {
     this.mode = GAME_MODES.STORY;
+    if (!this.storyIntroShown) {
+      this.introStep = 0;
+      this.introTarget = 'STORY_MAP';
+      this.status = GAME_STATUS.INTRO;
+      return;
+    }
     this.unlockedCities = ProgressStore.getUnlockedCities();
     this.status = GAME_STATUS.STORY_MAP;
   }

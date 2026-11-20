@@ -241,6 +241,19 @@ export class BossEngine {
         });
       }
     }
+
+    if (this.boss.phase2) {
+      const spreadAngle = aimAngle + (seq % 2 === 0 ? 0.18 : -0.18);
+      this.bossAttacks.push({
+        kind: this.boss.id === 'SPS' ? 'FIREBALL' : this.boss.id === 'COPAN' ? 'WATER_BLAST' : 'TIRE',
+        x: this.boss.x - 10,
+        y: spawnY,
+        vx: Math.cos(spreadAngle) * (spd * 0.95),
+        vy: Math.sin(spreadAngle) * (spd * 0.95),
+        rotation: 0,
+        radius: 12
+      });
+    }
   }
 
   update(dt, plane, inputState, dropEngine, scorer) {
@@ -266,9 +279,25 @@ export class BossEngine {
       plane.tilt *= 0.85;
     }
 
-    // 2. Movimiento vertical del Boss (se ralentiza si fue golpeado con Hielo)
+    // 2. Movimiento vertical del Boss (se ralentiza si fue golpeado con Hielo, acelera en Fase 2)
+    if (!this.boss.phase2 && this.boss.hp <= this.boss.maxHp * 0.5) {
+      this.boss.phase2 = true;
+      this.boss.enrageFlash = 0.4;
+      dropEngine.screenShake = 6;
+      dropEngine.floatingTexts.push({
+        x: this.canvasWidth / 2,
+        y: this.canvasHeight * 0.35,
+        text: t('boss.phase2'),
+        subtext: '',
+        color: '#facc15',
+        life: 1.8,
+        maxLife: 1.8,
+        vy: -20
+      });
+    }
     const chillFactor = this.boss.chillTimer > 0 ? 0.45 : 1.0;
-    this.boss.y += this.boss.vy * chillFactor * dt;
+    const phaseFactor = this.boss.phase2 ? 1.35 : 1.0;
+    this.boss.y += this.boss.vy * chillFactor * phaseFactor * dt;
     const bossMinY = hudTop + 6;
     const bossMaxY = this.canvasHeight - this.boss.height - 22;
     if (this.boss.y <= bossMinY) {
@@ -282,10 +311,10 @@ export class BossEngine {
     // 3. Ataques del Boss
     this.boss.attackTimer -= dt;
     if (this.boss.attackTimer <= 0) {
-      const isFuryHard = this.diffSettings.lives === 3 && this.boss.hp < this.boss.maxHp * 0.4;
+      const isFuryHard = (this.diffSettings.lives === 3 && this.boss.hp < this.boss.maxHp * 0.4) || this.boss.phase2;
       this.boss.attackTimer =
         (this.diffSettings.minCd + Math.random() * this.diffSettings.cdRange) *
-        (isFuryHard ? 0.78 : 1.0);
+        (isFuryHard ? 0.72 : 1.0);
       this.spawnBossAttack(plane);
     }
 
@@ -329,6 +358,7 @@ export class BossEngine {
             dropEngine.spawnSteamParticles(s.x, s.y);
           }
           scorer.score += isEffective ? 60 : 25;
+          dropEngine.screenShake = Math.max(dropEngine.screenShake, isEffective ? 4 : 2);
           if (this.onBossHit) this.onBossHit();
           dropEngine.spawnImpactParticles(s.x, s.y, { color: s.color }, true, isEffective);
           dropEngine.floatingTexts.push({

@@ -262,6 +262,12 @@ canvas#gameCanvas {
   }
 }
 
+@media (hover: hover) and (pointer: fine) and (min-width: 769px) {
+  .touch-controls {
+    display: none !important;
+  }
+}
+
 .game-container:fullscreen .touch-controls,
 .game-container:-webkit-full-screen .touch-controls {
   flex-direction: row;

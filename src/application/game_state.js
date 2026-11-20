@@ -35,7 +35,7 @@ export class GameState {
   constructor(canvasWidth, canvasHeight) {
     this.canvasWidth = canvasWidth;
     this.canvasHeight = canvasHeight;
-    this.status = GAME_STATUS.INTRO;
+    this.status = GAME_STATUS.START;
     this.introStep = 0; // 0 = Pose heroica, 1 = Sube al avión
     this.mode = GAME_MODES.STORY;
     this.difficulty = 'EASY';

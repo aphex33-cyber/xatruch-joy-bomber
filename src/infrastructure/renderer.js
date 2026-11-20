@@ -23,6 +23,8 @@ export class CanvasRenderer {
     this.mapCityButtons = [];
     this.bossMoveButtons = [];
     this.bossWeaponButtons = [];
+    this.screenFade = 0;
+    this.lastRenderedStatus = null;
   }
 
   resize() {
@@ -90,6 +92,10 @@ export class CanvasRenderer {
       this.renderFloatingTexts(ctx, gameState.dropEngine.floatingTexts);
     } else {
       const currentBiome = gameState.getBiomeAtX(gameState.plane.x);
+      if (this.lastRenderedStatus !== gameState.status) {
+        this.screenFade = 0.35;
+        this.lastRenderedStatus = gameState.status;
+      }
       this.renderSky(ctx, w, h, currentBiome, effMode);
       this.renderFarMountains(ctx, w, h, effMode);
       this.renderClouds(ctx, w, h, effMode);
@@ -1114,6 +1120,9 @@ export class CanvasRenderer {
         ctx.stroke();
 
         ctx.fillStyle = d.item.color;
+        ctx.globalAlpha = 0.28;
+        ctx.fillRect(-5, -24, 10, 14);
+        ctx.globalAlpha = 1;
         ctx.fillRect(-8, -8, 16, 16);
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 1.5;
@@ -1297,6 +1306,22 @@ export class CanvasRenderer {
       ctx.fillStyle = '#38bdf8';
       ctx.textAlign = 'center';
       ctx.fillText(t('hud.windBanner', { dir: windDir, str: windStr }), w / 2, hudHeight + 13);
+    }
+
+    if (effMode === GAME_MODES.CITY && scorer.successfulDrops < 2) {
+      const tutY = hudHeight + (Math.abs(gameState.windX || 0) > 5 ? 24 : 6);
+      const tutW = Math.min(w - 24, isMobile ? 320 : 520);
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+      ctx.beginPath();
+      ctx.roundRect(w / 2 - tutW / 2, tutY, tutW, 22, 11);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.font = `bold ${isMobile ? 9 : 11}px "JetBrains Mono", monospace`;
+      ctx.fillStyle = '#facc15';
+      ctx.textAlign = 'center';
+      ctx.fillText(t('hud.tutorial'), w / 2, tutY + 15);
     }
 
     this.renderCarouselHUD(ctx, gameState, w);
